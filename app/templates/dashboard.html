@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard | Durham Risk Intelligence</title>
+
+    <link rel="stylesheet" href="/static/css/styles.css">
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <main class="page-shell">
+        <section class="dashboard-header">
+            <div>
+                <p class="eyebrow">Public Safety Analytics</p>
+                <h1>Durham Risk Intelligence Dashboard</h1>
+                <p class="hero-text">
+                    A prototype dashboard using sample Durham arrest data to support cloud,
+                    geospatial, and future ML engineering portfolio development.
+                </p>
+            </div>
+
+            <a class="button secondary" href="/">Return Home</a>
+        </section>
+
+        <section class="metric-grid">
+            <article class="metric-card">
+                <p>Total Records</p>
+                <h2>{{ total_records }}</h2>
+            </article>
+
+            <article class="metric-card">
+                <p>Felony Records</p>
+                <h2>{{ felony_count }}</h2>
+            </article>
+
+            <article class="metric-card">
+                <p>Misdemeanor Records</p>
+                <h2>{{ misdemeanor_count }}</h2>
+            </article>
+        </section>
+
+        <section class="dashboard-grid">
+            <article class="panel">
+                <h2>Top District</h2>
+                <p class="large-value">{{ top_district }}</p>
+            </article>
+
+            <article class="panel">
+                <h2>Top Arrest Type</h2>
+                <p class="large-value">{{ top_arrest_type }}</p>
+            </article>
+
+            <article class="panel wide">
+                <h2>Most Common Offense Description</h2>
+                <p class="large-value">{{ top_description }}</p>
+            </article>
+        </section>
+
+        <section class="panel">
+            <h2>Arrest Location Map</h2>
+            <p class="panel-description">
+                Interactive map showing sample Durham arrest locations converted from projected X/Y coordinates into latitude and longitude.
+            </p>
+            <div id="map"></div>
+        </section>
+
+        <section class="dashboard-grid">
+            <article class="panel">
+                <h2>Arrests by District</h2>
+                <canvas id="districtChart"></canvas>
+            </article>
+
+            <article class="panel">
+                <h2>Felony vs Misdemeanor</h2>
+                <canvas id="severityChart"></canvas>
+            </article>
+        </section>
+
+        <section class="panel">
+            <h2>Top 10 Offense Descriptions</h2>
+            <p class="panel-description">
+                Most common offense descriptions in the current sample dataset.
+            </p>
+            <canvas id="topOffensesChart"></canvas>
+        </section>
+
+        <section class="panel">
+            <h2>Arrests by Hour</h2>
+            <p class="panel-description">
+                Distribution of arrest records by hour of day based on the sample dataset.
+            </p>
+            <canvas id="hourChart"></canvas>
+        </section>
+
+        <section class="panel">
+            <h2>Next Dashboard Buildout</h2>
+            <ul class="clean-list">
+                <li>Filter controls for district, beat, arrest type, and severity</li>
+                <li>Record preview table for selected dashboard results</li>
+                <li>Expanded temporal analytics by day of week and month</li>
+                <li>Future ML readiness features for event pattern analysis</li>
+            </ul>
+        </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

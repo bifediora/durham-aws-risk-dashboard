@@ -1,0 +1,404 @@
+
+# Durham AWS Risk Dashboard Process Log
+
+## Completed Steps
+
+1. Created project folder: `durham-aws-risk-dashboard`
+2. Created project folders:
+   - `app/`
+   - `data/`
+   - `scripts/`
+   - `docs/`
+3. Created project specific Python virtual environment:
+   - `durham-risk-aws-env`
+4. Installed starter FastAPI dependencies:
+   - FastAPI
+   - Uvicorn
+   - Pandas
+   - Python Multipart
+   - Jinja2
+5. Created starter FastAPI app:
+   - `app/main.py`
+6. Added homepage endpoint:
+   - `/`
+7. Added service health endpoint:
+   - `/health`
+8. Created 500 record random sample from Durham arrests data
+9. Saved cleaned sample file:
+   - `data/sample_arrests.csv`
+10. Connected FastAPI app to sample arrest dataset
+11. Added dashboard endpoint:
+   - `/dashboard`
+12. Removed temporary `random_sort` column from sample dataset
+13. Added dashboard indicators:
+   - total sample records
+   - felony records
+   - misdemeanor records
+   - top district
+   - top arrest type
+   - most common offense description
+14. Added JSON summary endpoint:
+   - `/api/summary`
+15. Added JSON records preview endpoint:
+   - `/api/records`
+16. Created dependency file:
+   - `requirements.txt`
+17. Created project README:
+   - `README.md`
+18. Created `.gitignore`
+19. Created local startup script:
+   - `scripts/run_local.sh`
+20. Created production startup script:
+   - `scripts/run_production.sh`
+21. Tested production startup script locally:
+   - `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+22. Created EC2 deployment notes:
+   - `docs/ec2_deployment_notes.md`
+23. Created CloudWatch monitoring notes:
+   - `docs/cloudwatch_monitoring_notes.md`
+## Current Local Endpoints
+
+| Endpoint | Purpose |
+|---|---|
+| `/` | Homepage |
+| `/health` | Health check |
+| `/dashboard` | HTML dashboard |
+| `/api/summary` | JSON dashboard metrics |
+| `/api/records` | JSON record preview |
+
+## Current Project Purpose
+
+This project is being built as a cloud engineering portfolio project that will eventually demonstrate:
+
+- AWS application deployment
+- production style architecture
+- public and private subnet design
+- load balancing
+- auto scaling
+- monitoring
+- Terraform automation
+- CI/CD workflow
+- future ML engineering expansion
+
+## Phase 1 Checkpoint: Local Application Foundation Complete
+
+At this stage, the local FastAPI foundation is complete. The project includes a working Durham Risk Intelligence Dashboard using a real 499 record sample of Durham arrest data.
+
+Completed local components:
+
+- FastAPI application created
+- Project specific virtual environment configured
+- Real sample arrest dataset added
+- Homepage endpoint created
+- Health check endpoint created
+- HTML dashboard endpoint created
+- JSON summary API endpoint created
+- JSON records preview endpoint created
+- README created
+- `.gitignore` created
+- Local startup script created
+- AWS architecture notes started
+
+The next phase is preparing the application for AWS EC2 deployment before expanding into load balancing, auto scaling, monitoring, Terraform, and CI/CD.
+
+S3 artifacts bucket created:
+
+- Created a private S3 bucket for project artifacts:
+  - `durham-risk-dashboard-artifacts-byron-333973504198-us-east-1-an`
+
+- Bucket purpose:
+  - Store dashboard screenshots
+  - Store architecture diagrams
+  - Store exported reports or sample outputs
+  - Store project documentation artifacts
+  - Support future Terraform and CI/CD phases
+
+- Bucket configuration:
+  - Region: `us-east-1`
+  - Block all public access: enabled
+  - Object ownership: ACLs disabled
+  - Default encryption: SSE-S3
+  - Bucket Key: disabled
+
+This adds S3 to the AWS Phase 1 architecture as a private artifact storage layer while keeping the dashboard itself hosted on EC2.
+
+S3 artifact upload test completed:
+
+- Created local artifacts folder structure:
+  - `artifacts/screenshots/`
+  - `artifacts/diagrams/`
+  - `artifacts/reports/`
+
+- Created a test artifact:
+  - `artifacts/reports/s3_test_artifact.txt`
+
+- Uploaded the test artifact to the private S3 bucket:
+  - `durham-risk-dashboard-artifacts-byron-333973504198-us-east-1-an`
+
+This confirms that the project now has both local and AWS based artifact storage for screenshots, architecture diagrams, reports, and future project documentation outputs.
+
+## Phase 2 Checkpoint: Initial EC2 Deployment Complete
+
+At this stage, the Durham Risk Intelligence Dashboard has been deployed to an AWS EC2 instance in the `us-east-1` region.
+
+Completed EC2 deployment components:
+
+- Created AWS account and selected Free plan
+- Selected AWS region:
+  - `us-east-1` / US East (N. Virginia)
+- Created monthly AWS budget:
+  - `$5`
+  - 80% alert threshold
+- Created EC2 key pair:
+  - `durham-risk-dashboard-key`
+- Stored private key securely:
+  - `~/.ssh/durham-risk-dashboard-key.pem`
+- Created EC2 instance:
+  - `durham-risk-dashboard-ec2`
+- Configured inbound security group rules:
+  - SSH on port `22` from My IP
+  - Custom TCP on port `8000` from My IP
+- Connected to EC2 using SSH
+- Updated Ubuntu server packages
+- Installed Python, pip, venv, and Git
+- Created project folder on EC2
+- Created project specific Python virtual environment on EC2
+- Installed FastAPI project dependencies on EC2
+- Copied `sample_arrests.csv` from local machine to EC2
+- Created production startup script on EC2
+- Ran FastAPI app on EC2 using:
+  - `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+- Successfully tested all application endpoints through the EC2 public IP
+
+Working EC2 endpoints:
+
+- `/`
+- `/health`
+- `/dashboard`
+- `/api/summary`
+- `/api/records?limit=5`
+
+This deployment validates that the application can run on AWS infrastructure. The next phase will improve the deployment by adding process management, then later load balancing, auto scaling, monitoring, Terraform, and CI/CD.
+
+## Phase 3 Checkpoint: Persistent EC2 Service Complete
+
+At this stage, the Durham Risk Intelligence Dashboard is running persistently on EC2 using a `systemd` service.
+
+Completed service management components:
+
+- Created a `systemd` service file:
+  - `/etc/systemd/system/durham-risk-dashboard.service`
+- Configured the service to run the FastAPI app from the project virtual environment
+- Set the working directory to:
+  - `/home/ubuntu/durham-aws-risk-dashboard`
+- Configured the app to run with:
+  - `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+- Reloaded `systemd`
+- Started the service with:
+  - `sudo systemctl start durham-risk-dashboard`
+- Enabled the service to start after reboot with:
+  - `sudo systemctl enable durham-risk-dashboard`
+- Confirmed service status:
+  - `Active: active (running)`
+- Successfully tested the app in the browser after service startup
+
+Useful service commands:
+
+```bash
+sudo systemctl status durham-risk-dashboard
+sudo systemctl restart durham-risk-dashboard
+sudo systemctl stop durham-risk-dashboard
+sudo journalctl -u durham-risk-dashboard -f
+
+## Phase 4 Checkpoint: Basic CloudWatch Monitoring Started
+
+At this stage, basic AWS monitoring has been started for the EC2 deployment.
+
+Completed monitoring components:
+
+- Created SNS topic:
+  - `durham-risk-dashboard-alerts`
+- Created email subscription for alert notifications
+- Confirmed SNS email subscription
+- Created CloudWatch CPU alarm:
+  - `durham-risk-dashboard-high-cpu`
+- Alarm metric:
+  - EC2 `CPUUtilization`
+- Alarm threshold:
+  - Greater than 70%
+- Evaluation period:
+  - 5 minutes
+- Notification destination:
+  - SNS topic `durham-risk-dashboard-alerts`
+
+This milestone adds operational awareness to the project and supports the cloud engineering goal of monitoring deployed infrastructure.
+
+## Phase 5 Checkpoint: Geospatial Dashboard Functionality Started
+
+At this stage, the dashboard has been upgraded from a basic metrics page into a styled geospatial dashboard prototype.
+
+Completed geospatial dashboard components:
+
+- Created template folder:
+  - `app/templates/`
+- Created static folders:
+  - `app/static/css/`
+  - `app/static/js/`
+- Created styled homepage template:
+  - `app/templates/index.html`
+- Created styled dashboard template:
+  - `app/templates/dashboard.html`
+- Created custom stylesheet:
+  - `app/static/css/styles.css`
+- Created dashboard JavaScript file:
+  - `app/static/js/dashboard.js`
+- Refactored FastAPI to use Jinja2 templates
+- Added static file serving through FastAPI
+- Added map data API endpoint:
+  - `/api/map-points`
+- Installed `pyproj` for coordinate conversion
+- Converted source coordinates from:
+  - `EPSG:2264`
+  - to `EPSG:4326`
+- Added Leaflet.js interactive map
+- Added OpenStreetMap basemap
+- Added arrest location circle markers
+- Added popup details for mapped arrest points
+- Added Durham area bounding box filter to remove coordinate outliers
+- Confirmed the map now focuses on Durham instead of zooming out to an incorrect outlier location
+
+This milestone adds real geospatial functionality and improves the portfolio value of the dashboard.
+
+Additional dashboard analytics completed:
+
+- Added Chart.js to the dashboard template
+- Added chart containers to:
+  - `app/templates/dashboard.html`
+- Added backend API endpoint:
+  - `/api/by-district`
+- Added backend API endpoint:
+  - `/api/by-severity`
+- Updated dashboard JavaScript:
+  - `app/static/js/dashboard.js`
+- Rendered arrests by district chart
+- Rendered felony vs misdemeanor chart
+
+This expands the dashboard from geospatial display into combined spatial and analytical public safety intelligence.
+
+Additional map layer improvements completed:
+
+- Added Durham County boundary GeoJSON layer:
+  - `app/static/geojson/durham_county_boundary.geojson`
+- Added police beats GeoJSON layer:
+  - `app/static/geojson/police_beats.geojson`
+- Added layer control to toggle map overlays:
+  - Durham County Boundary
+  - Police Beats
+  - Arrest Points
+- Added basemap toggle options:
+  - Gray Map
+  - Dark Map
+  - OpenStreetMap
+- Set Gray Map as the default basemap
+- Updated police beat polygon outline color to muted blue:
+  - `#60a5fa`
+- Reduced arrest point marker size for cleaner map display
+- Preserved overlay order:
+  - Basemap
+  - County boundary
+  - Police beats
+  - Arrest points
+
+This improves the map from a simple point display into a more complete geospatial dashboard with operational geography, contextual boundaries, and user controlled map layers.
+
+Additional dashboard analytics completed:
+
+- Added `/api/top-offenses` endpoint in `app/main.py`
+  - Returns the top offense descriptions by record count
+  - Supports a configurable `limit` parameter
+  - Default dashboard usage: `/api/top-offenses?limit=10`
+
+- Added Top 10 Offense Descriptions chart to the dashboard
+  - Added chart container in `app/templates/dashboard.html`
+  - Added `renderTopOffensesChart()` in `app/static/js/dashboard.js`
+  - Rendered as a horizontal bar chart for easier reading of long offense labels
+
+- Added `/api/by-hour` endpoint in `app/main.py`
+  - Parses `Arrest Time`
+  - Extracts the hour of day
+  - Returns all 24 hours with zero filled values where no records exist
+  - Adds readable hour labels such as `12 AM`, `1 AM`, and `5 PM`
+
+- Added Arrests by Hour chart to the dashboard
+  - Added chart container in `app/templates/dashboard.html`
+  - Added `renderHourChart()` in `app/static/js/dashboard.js`
+  - Rendered as a line chart to show temporal patterning across the day
+
+Current dashboard analytics now include:
+
+- KPI cards
+- Top district
+- Top arrest type
+- Most common offense description
+- Arrests by district chart
+- Felony vs misdemeanor chart
+- Top 10 offense descriptions chart
+- Arrests by hour chart
+
+This improves the dashboard from a basic map and summary view into a stronger analytical prototype that combines spatial, categorical, severity, and temporal views of the sample Durham arrest data.
+
+Updated EC2 redeployment completed:
+
+- Copied updated local dashboard files to the EC2 instance:
+  - `app/main.py`
+  - `app/templates/`
+  - `app/static/`
+  - `data/sample_arrests.csv`
+  - `requirements.txt`
+
+- Reconnected to the EC2 instance using SSH:
+  - `ssh -i ~/.ssh/durham-risk-dashboard-key.pem ubuntu@35.172.140.39`
+
+- Updated Python dependencies on EC2 using:
+  - `pip install -r requirements.txt`
+
+- Restarted the persistent systemd service:
+  - `sudo systemctl restart durham-risk-dashboard`
+
+- Confirmed the FastAPI app was healthy locally on EC2:
+  - `curl http://127.0.0.1:8000/health`
+
+- Confirmed the new hourly analytics endpoint worked on EC2:
+  - `curl http://127.0.0.1:8000/api/by-hour`
+
+- Restored public browser access to the dashboard by updating the EC2 security group inbound rule for port `8000` to the current IP address.
+
+- Confirmed the public dashboard is reachable at:
+  - `http://35.172.140.39:8000/dashboard`
+
+This redeployment confirms that the updated geospatial dashboard, analytics endpoints, static assets, templates, and dependency changes are now running on the AWS EC2 instance through the persistent systemd service.
+
+README documentation updated:
+
+- Rewrote `README.md` to reflect the current project status.
+- Added project overview and portfolio purpose.
+- Documented the three phase cloud engineering path:
+  - Phase 1: Production style AWS architecture
+  - Phase 2: Terraform Infrastructure as Code
+  - Phase 3: CI/CD deployment automation
+- Documented current AWS services:
+  - EC2
+  - Security Group
+  - CloudWatch
+  - SNS
+  - S3
+  - IAM
+- Documented current dashboard features and API endpoints.
+- Added local run instructions.
+- Added EC2 deployment notes.
+- Added current security group configuration.
+- Added target Phase 1 architecture roadmap.
+- Added future Terraform and CI/CD goals.
+- Added a portfolio narrative connecting the FastAPI dashboard, AWS deployment, geospatial intelligence, and future automation work.
+
+This README update makes the repository more suitable for GitHub portfolio review and clearly separates current implementation from future architecture goals.

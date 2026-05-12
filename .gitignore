@@ -1,0 +1,73 @@
+# Python virtual environments
+durham-risk-aws-env/
+venv/
+.env/
+.venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# macOS system files
+.DS_Store
+
+# Environment variables and secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# AWS credentials and local config
+.aws/
+credentials
+config
+
+# Logs
+*.log
+logs/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Editor and IDE files
+.vscode/
+.idea/
+
+# Local runtime files
+*.sqlite
+*.db
+
+# Raw or large local data files
+data/raw/
+data/raw_geo/
+data/*.gpkg
+data/*.shp
+data/*.shx
+data/*.dbf
+data/*.prj
+data/*.cpg
+data/*.xlsx
+data/*.xls
+
+# Keep processed sample data required by the dashboard
+!data/sample_arrests.csv
+
+# Local artifacts can be regenerated or uploaded to S3
+artifacts/screenshots/*
+artifacts/diagrams/*
+artifacts/reports/*
+
+# Keep artifact folder structure if placeholder files are added later
+!artifacts/
+!artifacts/screenshots/
+!artifacts/diagrams/
+!artifacts/reports/
+!artifacts/screenshots/.gitkeep
+!artifacts/diagrams/.gitkeep
+!artifacts/reports/.gitkeep
