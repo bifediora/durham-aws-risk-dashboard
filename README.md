@@ -20,7 +20,7 @@ This project is designed to show the ability to:
 
 - Build a real data driven web application
 - Deploy a FastAPI app to AWS EC2
-- Configure a persistent Linux service with `systemd`
+- Configure a persistent Linux service with systemd
 - Use AWS CloudWatch and SNS for basic monitoring
 - Use S3 for private project artifact storage
 - Structure a project for future Terraform automation
@@ -38,10 +38,11 @@ Persistent EC2 service: working
 CloudWatch monitoring: configured
 SNS alerting: configured
 Private S3 artifact bucket: created
+Dashboard screenshots captured and uploaded to S3
 Runtime dependencies: cleaned
 Architecture notes: documented
 Process log: documented
-
+GitHub repository: created and pushed
 ```
 
 ## Current AWS Architecture
@@ -101,6 +102,40 @@ The bucket is used for:
 
 The bucket is private and is not used for public website hosting.
 
+## Screenshot Artifacts
+
+Dashboard screenshots have been captured from the public EC2 deployment and uploaded to the private S3 artifacts bucket.
+
+Local screenshot folder:
+
+```text
+artifacts/screenshots/
+```
+
+S3 screenshot folder:
+
+```text
+screenshots/
+```
+
+Current screenshot artifacts:
+
+```text
+dashboard_top_summary.png
+dashboard_map_layers.png
+dashboard_analytics_charts.png
+```
+
+These screenshots are intended for:
+
+- GitHub portfolio documentation
+- LinkedIn project summaries
+- Architecture walkthroughs
+- Future README visual updates
+- Project presentation materials
+
+The screenshot files are intentionally excluded from Git tracking through `.gitignore` because they are stored as private project artifacts in S3.
+
 ## Dashboard Features
 
 The current dashboard includes:
@@ -127,20 +162,20 @@ The current dashboard includes:
 
 | Endpoint | Purpose |
 |---|---|
-| / | Homepage |
-| /health | Service health check |
-| /dashboard | HTML dashboard |
-| /api/summary | Summary metrics as JSON |
-| /api/records | Sample records as JSON |
-| /api/map-points | Converted arrest coordinates for map display |
-| /api/by-district | Arrest counts by district |
-| /api/by-severity | Felony versus misdemeanor counts |
-| /api/top-offenses | Top offense descriptions |
-| /api/by-hour | Arrest counts by hour of day |
+| `/` | Homepage |
+| `/health` | Service health check |
+| `/dashboard` | HTML dashboard |
+| `/api/summary` | Summary metrics as JSON |
+| `/api/records` | Sample records as JSON |
+| `/api/map-points` | Converted arrest coordinates for map display |
+| `/api/by-district` | Arrest counts by district |
+| `/api/by-severity` | Felony versus misdemeanor counts |
+| `/api/top-offenses` | Top offense descriptions |
+| `/api/by-hour` | Arrest counts by hour of day |
 
 ## Geospatial Processing
 
-The dashboard uses sample arrest data with projected X and Y coordinate fields.
+The dashboard uses sample arrest data with projected `X` and `Y` coordinate fields.
 
 The application converts coordinates from:
 
@@ -179,7 +214,6 @@ durham-aws-risk-dashboard/
     screenshots/
     diagrams/
     reports/
-      s3_test_artifact.txt
   data/
     sample_arrests.csv
     raw_geo/
@@ -210,7 +244,7 @@ python-multipart==0.0.27
 pyproj==3.7.2
 ```
 
-Local geospatial processing tools such as geopandas, pyogrio, and shapely may be used for preparing GeoJSON layers, but they are not required for the current EC2 runtime app.
+Local geospatial processing tools such as `geopandas`, `pyogrio`, and `shapely` may be used for preparing GeoJSON layers, but they are not required for the current EC2 runtime app.
 
 ## Running Locally
 
@@ -267,6 +301,37 @@ The app runs through a persistent systemd service so it continues running after 
 | 8000 | FastAPI dashboard access | Current user IP |
 
 This is a development configuration. The target production configuration should route public traffic through an Application Load Balancer instead of direct EC2 port access.
+
+## GitHub Repository
+
+The project has been initialized as a Git repository and pushed to GitHub.
+
+Repository:
+
+```text
+https://github.com/bifediora/durham-aws-risk-dashboard
+```
+
+Current branch:
+
+```text
+main
+```
+
+Git tracking has been configured with a `.gitignore` that excludes:
+
+- Python virtual environments
+- Private keys
+- Environment files
+- AWS credentials
+- Python cache files
+- macOS system files
+- Raw geospatial files
+- Local artifact outputs
+- Local databases
+- Logs
+
+The repository is intended to show source code, documentation, application structure, and deployment readiness while avoiding sensitive files and large raw data artifacts.
 
 ## Target Phase 1 Architecture
 
@@ -340,13 +405,13 @@ Target CI/CD components:
 
 Near term:
 
-1. Finalize README and documentation
-2. Capture dashboard screenshots
-3. Upload screenshots to S3 artifacts bucket
-4. Create architecture diagram
-5. Add Application Load Balancer
-6. Add target group and health checks
-7. Move toward Auto Scaling Group
+1. Keep dashboard functionality frozen for now
+2. Maintain screenshot artifacts in S3
+3. Create architecture diagram
+4. Add Application Load Balancer
+5. Add target group and health checks
+6. Move toward Auto Scaling Group
+7. Prepare for Terraform conversion
 
 Future:
 
@@ -363,7 +428,7 @@ This project demonstrates the ability to take a meaningful data application from
 The project story:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, and structured the project for future Terraform and CI/CD automation.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, and structured the project for future Terraform and CI/CD automation.
 ```
 
 The application workload gives the AWS architecture practical meaning by connecting cloud infrastructure to public sector analytics, geospatial intelligence, and future applied ML readiness.

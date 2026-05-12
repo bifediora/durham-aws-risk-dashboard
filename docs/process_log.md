@@ -137,6 +137,24 @@ S3 artifact upload test completed:
 
 This confirms that the project now has both local and AWS based artifact storage for screenshots, architecture diagrams, reports, and future project documentation outputs.
 
+Dashboard screenshots captured and uploaded to S3:
+
+- Captured three dashboard screenshots from the public EC2 dashboard:
+  - `dashboard_top_summary.png`
+  - `dashboard_map_layers.png`
+  - `dashboard_analytics_charts.png`
+
+- Stored the screenshots locally in:
+  - `artifacts/screenshots/`
+
+- Uploaded the screenshots to the private S3 artifacts bucket:
+  - `durham-risk-dashboard-artifacts-byron-333973504198-us-east-1-an`
+
+- S3 folder path used:
+  - `screenshots/`
+
+This creates portfolio ready visual artifacts that can be used later in the README, architecture documentation, GitHub repository, and LinkedIn project summary.
+
 ## Phase 2 Checkpoint: Initial EC2 Deployment Complete
 
 At this stage, the Durham Risk Intelligence Dashboard has been deployed to an AWS EC2 instance in the `us-east-1` region.
