@@ -41,6 +41,7 @@ Private S3 artifact bucket: created
 Dashboard screenshots captured and uploaded to S3
 Runtime dependencies: cleaned
 Architecture notes: documented
+Current architecture diagram: documented
 Process log: documented
 GitHub repository: created and pushed
 ```
@@ -72,6 +73,33 @@ http://35.172.140.39:8000/health
 ```
 
 Note: The current dashboard is exposed through direct EC2 access on port 8000 for development purposes. A future production architecture should place the application behind an Application Load Balancer.
+
+## Architecture Documentation
+
+Supporting architecture documentation is stored in the `docs/` folder.
+
+| Document | Purpose |
+|---|---|
+| `docs/current_architecture_diagram.md` | Mermaid based diagram of the current AWS deployment |
+| `docs/aws_architecture_notes.md` | Current architecture notes, target architecture, Terraform goals, and CI/CD goals |
+| `docs/ec2_deployment_notes.md` | EC2 setup and deployment notes |
+| `docs/cloudwatch_monitoring_notes.md` | CloudWatch and SNS monitoring notes |
+| `docs/process_log.md` | Step by step project build log |
+| `docs/dashboard_enhancement_plan.md` | Dashboard improvement plan and feature notes |
+
+The current architecture diagram shows the working deployment pattern:
+
+```text
+User
+  ↓
+EC2 public IP on port 8000
+  ↓
+FastAPI dashboard
+  ↓
+Local sample data, templates, static assets, GeoJSON layers, and charts
+```
+
+Supporting AWS services include CloudWatch, SNS, S3, GitHub, and EC2 security group controls.
 
 ## Current AWS Services Used
 
@@ -220,6 +248,7 @@ durham-aws-risk-dashboard/
   docs/
     aws_architecture_notes.md
     cloudwatch_monitoring_notes.md
+    current_architecture_diagram.md
     dashboard_enhancement_plan.md
     ec2_deployment_notes.md
     process_log.md
@@ -407,7 +436,7 @@ Near term:
 
 1. Keep dashboard functionality frozen for now
 2. Maintain screenshot artifacts in S3
-3. Create architecture diagram
+3. Maintain current architecture documentation
 4. Add Application Load Balancer
 5. Add target group and health checks
 6. Move toward Auto Scaling Group
@@ -428,7 +457,7 @@ This project demonstrates the ability to take a meaningful data application from
 The project story:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, and structured the project for future Terraform and CI/CD automation.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current AWS architecture, and structured the project for future Terraform and CI/CD automation.
 ```
 
 The application workload gives the AWS architecture practical meaning by connecting cloud infrastructure to public sector analytics, geospatial intelligence, and future applied ML readiness.
