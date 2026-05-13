@@ -42,6 +42,8 @@ Dashboard screenshots captured and uploaded to S3
 Runtime dependencies: cleaned
 Architecture notes: documented
 Current architecture diagram: documented
+Target architecture diagram: documented
+Project checkpoint: documented
 Process log: documented
 GitHub repository: created and pushed
 ```
@@ -81,7 +83,9 @@ Supporting architecture documentation is stored in the `docs/` folder.
 | Document | Purpose |
 |---|---|
 | `docs/current_architecture_diagram.md` | Mermaid based diagram of the current AWS deployment |
+| `docs/target_architecture_diagram.md` | Mermaid based diagram and notes for the target Phase 1 production style AWS architecture |
 | `docs/aws_architecture_notes.md` | Current architecture notes, target architecture, Terraform goals, and CI/CD goals |
+| `docs/project_checkpoint.md` | Current project state, handoff notes, AWS resources, GitHub status, and next steps |
 | `docs/ec2_deployment_notes.md` | EC2 setup and deployment notes |
 | `docs/cloudwatch_monitoring_notes.md` | CloudWatch and SNS monitoring notes |
 | `docs/process_log.md` | Step by step project build log |
@@ -97,6 +101,20 @@ EC2 public IP on port 8000
 FastAPI dashboard
   ↓
 Local sample data, templates, static assets, GeoJSON layers, and charts
+```
+
+The target architecture diagram shows the intended next AWS pattern:
+
+```text
+User
+  ↓
+Application Load Balancer
+  ↓
+Target Group
+  ↓
+EC2 FastAPI application instance
+  ↓
+Application data layer and supporting services
 ```
 
 Supporting AWS services include CloudWatch, SNS, S3, GitHub, and EC2 security group controls.
@@ -252,6 +270,8 @@ durham-aws-risk-dashboard/
     dashboard_enhancement_plan.md
     ec2_deployment_notes.md
     process_log.md
+    project_checkpoint.md
+    target_architecture_diagram.md
   scripts/
     convert_geo_layers.py
     run_local.sh
@@ -375,6 +395,7 @@ The target production style AWS architecture includes:
 | NAT Gateway | Outbound internet access for private instances |
 | EC2 | Application compute |
 | Application Load Balancer | Public traffic routing and health checks |
+| Target Group | Registers EC2 instances and performs health checks |
 | Auto Scaling Group | Instance recovery and scaling |
 | RDS | Future private database layer |
 | S3 | Artifact and export storage |
@@ -387,9 +408,11 @@ Target request flow:
 ```text
 User
   ↓
-Application Load Balancer in public subnets
+Application Load Balancer
   ↓
-EC2 FastAPI instances in private subnets
+Target Group
+  ↓
+EC2 FastAPI instances
   ↓
 Private data layer or local application data
   ↓
@@ -437,10 +460,11 @@ Near term:
 1. Keep dashboard functionality frozen for now
 2. Maintain screenshot artifacts in S3
 3. Maintain current architecture documentation
-4. Add Application Load Balancer
-5. Add target group and health checks
-6. Move toward Auto Scaling Group
-7. Prepare for Terraform conversion
+4. Maintain target architecture documentation
+5. Add Application Load Balancer
+6. Add target group and health checks
+7. Move toward Auto Scaling Group
+8. Prepare for Terraform conversion
 
 Future:
 
@@ -457,7 +481,7 @@ This project demonstrates the ability to take a meaningful data application from
 The project story:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current AWS architecture, and structured the project for future Terraform and CI/CD automation.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architectures, and structured the project for future Terraform and CI/CD automation.
 ```
 
 The application workload gives the AWS architecture practical meaning by connecting cloud infrastructure to public sector analytics, geospatial intelligence, and future applied ML readiness.
