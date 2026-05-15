@@ -18,16 +18,20 @@ This project is part of a broader cloud portfolio path with three major phases:
 
 ## Current Architecture Status
 
-The current implementation is an early Phase 1 AWS architecture.
+The current implementation is a Phase 1 AWS architecture in progress.
 
-The dashboard is deployed on a single EC2 instance and served through a persistent `systemd` service. Monitoring has been added through CloudWatch and SNS. A private S3 bucket has also been created for project artifacts.
+The dashboard is deployed on a single EC2 instance and served through a persistent `systemd` service. The application is now placed behind an Application Load Balancer and Target Group. The target group health check is working, the EC2 target is healthy, and the dashboard is reachable through the ALB DNS name.
+
+Monitoring has been added through CloudWatch and SNS. A private S3 bucket has also been created for project artifacts.
 
 ## Current AWS Services Implemented
 
 | Service | Current Purpose |
 |---|---|
 | EC2 | Hosts the FastAPI dashboard application |
-| Security Group | Controls inbound SSH and dashboard access |
+| Application Load Balancer | Provides the public HTTP entry point for the dashboard |
+| Target Group | Routes ALB traffic to the EC2 FastAPI application on port `8000` |
+| Security Groups | Control inbound SSH, ALB access, and ALB to EC2 application traffic |
 | CloudWatch | Provides basic monitoring through a CPU alarm |
 | SNS | Sends alert notifications from CloudWatch |
 | S3 | Stores private project artifacts such as screenshots, reports, and diagrams |
@@ -42,24 +46,155 @@ Current runtime structure:
 ```text
 User
   ↓
-Public EC2 IP on port 8000
+Application Load Balancer on port 80
   ↓
-FastAPI application
+Target Group
+  ↓
+EC2 FastAPI application on port 8000
   ↓
 Local CSV based sample data
 ```
 
-Current public dashboard endpoint:
+Current preferred dashboard access pattern:
 
 ```text
-http://35.172.140.39:8000/dashboard
+http://<ALB-DNS-NAME>/dashboard
 ```
 
-Current health endpoint:
+Current preferred health endpoint access pattern:
 
 ```text
-http://35.172.140.39:8000/health
+http://<ALB-DNS-NAME>/health
 ```
+
+Direct EC2 access on port `8000` may still be available temporarily for development and troubleshooting, but the preferred access path is now through the Application Load Balancer.
+
+## Application Load Balancer Configuration
+
+Application Load Balancer name:
+
+```text
+durham-risk-dashboard-alb
+```
+
+Load balancer type:
+
+```text
+Application Load Balancer
+```
+
+Scheme:
+
+```text
+Internet-facing
+```
+
+IP address type:
+
+```text
+IPv4
+```
+
+Listener:
+
+```text
+HTTP : 80
+```
+
+Default action:
+
+```text
+Forward to durham-risk-dashboard-tg
+```
+
+Confirmed working routes through the ALB:
+
+```text
+/health
+/dashboard
+```
+
+## Target Group Configuration
+
+Target group name:
+
+```text
+durham-risk-dashboard-tg
+```
+
+Target type:
+
+```text
+Instance
+```
+
+Protocol and port:
+
+```text
+HTTP : 8000
+```
+
+Protocol version:
+
+```text
+HTTP1
+```
+
+Health check protocol:
+
+```text
+HTTP
+```
+
+Health check path:
+
+```text
+/health
+```
+
+Success code:
+
+```text
+200
+```
+
+Registered target:
+
+```text
+durham-risk-dashboard-ec2
+```
+
+Target EC2 instance ID:
+
+```text
+i-07895b87a7d7eb25b
+```
+
+Final target health status:
+
+```text
+Healthy
+```
+
+## Health Check Endpoint
+
+The FastAPI health check endpoint is:
+
+```text
+/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "healthy",
+  "service": "Durham Risk Intelligence Dashboard",
+  "version": "0.2.3"
+}
+```
+
+This endpoint is used by the Target Group to determine whether the EC2 application instance is healthy and available to receive traffic.
 
 ## EC2 Configuration
 
@@ -71,6 +206,7 @@ Current EC2 role in the architecture:
 - Uses a Python virtual environment for dependency isolation
 - Reads sample data from the local EC2 project directory
 - Serves templates, static files, JavaScript, CSS, and GeoJSON assets
+- Receives dashboard traffic from the Application Load Balancer
 
 Current EC2 project directory:
 
@@ -91,18 +227,153 @@ sudo systemctl status durham-risk-dashboard --no-pager
 sudo systemctl restart durham-risk-dashboard
 ```
 
+Runtime validation commands:
+
+```bash
+sudo ss -tulpn | grep 8000
+curl http://127.0.0.1:8000/health
+```
+
+Confirmed FastAPI listener:
+
+```text
+0.0.0.0:8000
+```
+
 ## Security Group Configuration
 
-Current security group access:
+The current security group design separates public HTTP access from application traffic.
 
-| Port | Purpose | Source |
-|---|---|---|
-| 22 | SSH access | Current user IP |
-| 8000 | FastAPI dashboard access | Current user IP |
+### ALB Security Group
 
-The current dashboard is intentionally restricted by source IP during development.
+ALB security group name:
 
-Future production architecture should move public access from direct EC2 port access to an Application Load Balancer.
+```text
+durham-risk-dashboard-alb-sg
+```
+
+ALB security group ID:
+
+```text
+sg-0039dbb4fe5326472
+```
+
+Purpose:
+
+```text
+Allows HTTP access to the Durham Risk Intelligence Dashboard Application Load Balancer.
+```
+
+Current inbound rule:
+
+| Type | Protocol | Port | Source | Purpose |
+|---|---|---|---|---|
+| HTTP | TCP | 80 | Current user IP | Allows browser access to the ALB during development |
+
+Current outbound rule:
+
+| Type | Protocol | Port | Destination | Purpose |
+|---|---|---|---|---|
+| Custom TCP | TCP | 8000 | 0.0.0.0/0 | Allows ALB outbound traffic to the FastAPI target on port `8000` |
+
+### EC2 Security Group
+
+EC2 security group name:
+
+```text
+launch-wizard-1
+```
+
+EC2 security group ID:
+
+```text
+sg-08614f1873385ef42
+```
+
+Relevant inbound rules:
+
+| Type | Protocol | Port | Source | Purpose |
+|---|---|---|---|---|
+| SSH | TCP | 22 | Current user IP | Allows administrative SSH access |
+| Custom TCP | TCP | 8000 | sg-0039dbb4fe5326472 | Allows FastAPI traffic from the ALB security group |
+
+This configuration means user traffic reaches the dashboard through the ALB on port `80`, while the EC2 application only accepts application traffic on port `8000` from the ALB security group.
+
+## ALB Troubleshooting Summary
+
+During setup, the target group initially showed:
+
+```text
+Unused
+```
+
+Reason:
+
+```text
+Target is in an Availability Zone that is not enabled for the load balancer
+```
+
+Fix:
+
+The ALB subnet mapping was updated to include the Availability Zone where the EC2 target was running.
+
+After that fix, the target status changed to:
+
+```text
+Unhealthy
+```
+
+Health status reason:
+
+```text
+Request timed out
+```
+
+The FastAPI application was then validated directly on EC2 using:
+
+```bash
+sudo ss -tulpn | grep 8000
+curl http://127.0.0.1:8000/health
+curl http://172.31.40.20:8000/health
+```
+
+The application was confirmed to be listening on:
+
+```text
+0.0.0.0:8000
+```
+
+The main issue was that the ALB was initially attached to the wrong security group:
+
+```text
+sg-0f149ba485cdd5aae
+default
+```
+
+The EC2 security group was allowing port `8000` traffic from the intended ALB security group:
+
+```text
+sg-0039dbb4fe5326472
+```
+
+but the ALB itself was not using that security group.
+
+Fix:
+
+The ALB security group attachment was changed to:
+
+```text
+sg-0039dbb4fe5326472
+durham-risk-dashboard-alb-sg
+```
+
+After this correction, the target group became healthy and the dashboard opened successfully through the ALB DNS name.
+
+Detailed notes are stored in:
+
+```text
+docs/alb_target_group_notes.md
+```
 
 ## S3 Artifact Storage
 
@@ -141,6 +412,7 @@ Current monitoring components:
 - CloudWatch CPU alarm
 - SNS topic for dashboard alerts
 - Email notification subscription
+- Target group health check through the ALB
 
 Current alarm:
 
@@ -205,7 +477,7 @@ Local geospatial processing dependencies such as `geopandas`, `pyogrio`, and `sh
 
 ## Target Production Architecture
 
-The long term Phase 1 target is a more production style AWS architecture.
+The long term Phase 1 target is a more complete production style AWS architecture.
 
 Target services include:
 
@@ -244,29 +516,30 @@ S3 artifact and export storage
 
 | Component | Current State | Target State |
 |---|---|---|
-| Compute | Single EC2 instance | EC2 instances behind ALB |
-| Public Access | Direct EC2 public IP on port 8000 | Application Load Balancer |
+| Compute | Single EC2 instance | EC2 instances managed by launch template and Auto Scaling Group |
+| Public Access | Application Load Balancer on port `80` | Application Load Balancer with HTTPS and production DNS |
+| Application Port | EC2 receives app traffic on port `8000` from ALB | Private EC2 app traffic from ALB only |
 | Network | Default VPC | Custom VPC with public and private subnets |
 | Scaling | Manual single instance | Auto Scaling Group |
 | Data Layer | Local CSV file | Future RDS or structured storage |
 | Artifacts | Private S3 bucket | Private S3 bucket managed by Terraform |
-| Monitoring | CloudWatch CPU alarm and SNS | Expanded metrics, logs, health checks, and alarms |
-| Deployment | Manual file copy and service restart | CI/CD pipeline |
+| Monitoring | CloudWatch CPU alarm, SNS, and target group health check | Expanded metrics, logs, health checks, and alarms |
+| Deployment | Manual file copy, Git updates, and service restart | CI/CD pipeline |
 | Infrastructure | Manually created AWS resources | Terraform managed infrastructure |
 
 ## Future Phase 1 Improvements
 
 Recommended next AWS architecture improvements:
 
-1. Create a custom VPC
-2. Add public and private subnets
-3. Add an Internet Gateway
-4. Add route tables
-5. Move toward an Application Load Balancer
-6. Place the application behind the load balancer
-7. Add a target group and health checks
-8. Add a launch template
-9. Add an Auto Scaling Group
+1. Review and tighten direct EC2 public access
+2. Keep user traffic flowing through the ALB
+3. Create a launch template
+4. Add an Auto Scaling Group
+5. Attach the Auto Scaling Group to the existing Target Group
+6. Consider HTTPS with ACM certificate and Route 53 if using a domain
+7. Create a custom VPC
+8. Add public and private subnets
+9. Move application instances into private subnets
 10. Consider moving data storage to RDS or S3 based structured input
 
 ## Phase 2 Terraform Goal
@@ -285,8 +558,9 @@ Terraform should eventually manage:
 - S3 bucket
 - CloudWatch alarms
 - SNS topic
-- Load balancer
-- Target group
+- Application Load Balancer
+- Target Group
+- Launch Template
 - Auto Scaling Group
 
 ## Phase 3 CI/CD Goal
@@ -305,12 +579,12 @@ Target CI/CD components:
 
 ## Portfolio Narrative
 
-This project demonstrates the ability to take a data driven application from local development to cloud deployment.
+This project demonstrates the ability to take a data driven application from local development to cloud deployment and then progressively mature the cloud architecture.
 
 The portfolio story is:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, and structured the project for future Terraform and CI/CD automation.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, documented the current and target AWS architectures, and placed the application behind an Application Load Balancer with Target Group health checks to move the project toward a production style AWS architecture.
 ```
 
 The application workload gives the AWS architecture practical meaning by connecting cloud infrastructure to public sector analytics, geospatial intelligence, and future applied ML readiness.
