@@ -420,3 +420,119 @@ README documentation updated:
 - Added a portfolio narrative connecting the FastAPI dashboard, AWS deployment, geospatial intelligence, and future automation work.
 
 This README update makes the repository more suitable for GitHub portfolio review and clearly separates current implementation from future architecture goals.
+
+## ALB and Target Group Milestone Completed
+
+Created and configured the Application Load Balancer and Target Group for the Durham Risk Intelligence Dashboard.
+
+This step moves the project from direct EC2 public IP access toward a more production style AWS architecture.
+
+Previous access pattern:
+
+```text
+User
+  ↓
+EC2 public IP on port 8000
+  ↓
+FastAPI dashboard application
+```
+
+New access pattern:
+
+```text
+User
+  ↓
+Application Load Balancer on port 80
+  ↓
+Target Group
+  ↓
+EC2 FastAPI instance on port 8000
+  ↓
+FastAPI dashboard application
+```
+
+AWS resources configured:
+
+- Application Load Balancer:
+  - `durham-risk-dashboard-alb`
+
+- Target Group:
+  - `durham-risk-dashboard-tg`
+
+- Target EC2 instance:
+  - `durham-risk-dashboard-ec2`
+  - Instance ID: `i-07895b87a7d7eb25b`
+
+- Target group protocol and port:
+  - `HTTP:8000`
+
+- Health check path:
+  - `/health`
+
+- Health check success code:
+  - `200`
+
+- Final target status:
+  - `Healthy`
+
+Confirmed working ALB routes:
+
+```text
+/health
+/dashboard
+```
+
+Troubleshooting completed:
+
+- Target group initially showed `Unused`.
+- The reason was that the EC2 instance was in an Availability Zone not enabled for the load balancer.
+- The ALB subnet mapping was updated to include the EC2 instance Availability Zone.
+- Target status then changed to `Unhealthy`.
+- Health status reason was `Request timed out`.
+- Verified FastAPI was running correctly on EC2 using:
+
+```bash
+sudo ss -tulpn | grep 8000
+curl http://127.0.0.1:8000/health
+curl http://172.31.40.20:8000/health
+```
+
+- Confirmed FastAPI was listening on:
+
+```text
+0.0.0.0:8000
+```
+
+- Confirmed the health endpoint worked locally and through the EC2 private IP.
+- Found that the ALB was attached to the wrong security group:
+  - `sg-0f149ba485cdd5aae`
+- Corrected the ALB security group attachment to:
+  - `sg-0039dbb4fe5326472`
+  - `durham-risk-dashboard-alb-sg`
+- Confirmed the EC2 security group allowed port `8000` traffic from the ALB security group.
+- After correcting the ALB security group attachment, the target group became healthy.
+- Confirmed the dashboard and health endpoint opened successfully through the ALB DNS name.
+
+Security group configuration confirmed:
+
+- ALB security group:
+  - `sg-0039dbb4fe5326472`
+  - `durham-risk-dashboard-alb-sg`
+
+- EC2 security group:
+  - `sg-08614f1873385ef42`
+  - `launch-wizard-1`
+
+- EC2 inbound rule:
+  - Port: `8000`
+  - Source: `sg-0039dbb4fe5326472`
+  - Purpose: allow FastAPI traffic from the ALB
+
+A detailed ALB setup and troubleshooting note was also created:
+
+```text
+docs/alb_target_group_notes.md
+```
+
+This milestone confirms that the project now has a working load balanced access path and has moved closer to the original Phase 1 production style AWS architecture goal.
+
