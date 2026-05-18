@@ -531,16 +531,17 @@ S3 artifact and export storage
 
 Recommended next AWS architecture improvements:
 
-1. Review and tighten direct EC2 public access
-2. Keep user traffic flowing through the ALB
-3. Create a launch template
-4. Add an Auto Scaling Group
-5. Attach the Auto Scaling Group to the existing Target Group
-6. Consider HTTPS with ACM certificate and Route 53 if using a domain
-7. Create a custom VPC
-8. Add public and private subnets
-9. Move application instances into private subnets
-10. Consider moving data storage to RDS or S3 based structured input
+1. Keep user traffic flowing through the Application Load Balancer
+2. Maintain direct EC2 port `8000` access as blocked from the browser
+3. Keep EC2 port `8000` restricted to the ALB security group
+4. Create a launch template
+5. Add an Auto Scaling Group
+6. Attach the Auto Scaling Group to the existing Target Group
+7. Consider HTTPS with ACM certificate and Route 53 if using a domain
+8. Create a custom VPC
+9. Add public and private subnets
+10. Move application instances into private subnets
+11. Consider moving data storage to RDS or S3 based structured input
 
 ## Phase 2 Terraform Goal
 
@@ -584,7 +585,7 @@ This project demonstrates the ability to take a data driven application from loc
 The portfolio story is:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, documented the current and target AWS architectures, and placed the application behind an Application Load Balancer with Target Group health checks to move the project toward a production style AWS architecture.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, documented the current and target AWS architectures, placed the application behind an Application Load Balancer with Target Group health checks, and tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group.
 ```
 
 The application workload gives the AWS architecture practical meaning by connecting cloud infrastructure to public sector analytics, geospatial intelligence, and future applied ML readiness.
