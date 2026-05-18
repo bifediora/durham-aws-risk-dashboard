@@ -814,7 +814,7 @@ Focus next on:
 The current portfolio story is:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architecture, and placed the application behind an Application Load Balancer with Target Group health checks.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architecture, placed the application behind an Application Load Balancer with Target Group health checks, and tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group.
 ```
 
-The next phase will strengthen the AWS architecture by tightening the ALB first access pattern, preparing a launch template, moving toward Auto Scaling, and eventually converting the infrastructure to Terraform with CI/CD deployment automation.
+The next phase will strengthen the AWS architecture by preparing a launch template, moving toward Auto Scaling, and eventually converting the infrastructure to Terraform with CI/CD deployment automation.
