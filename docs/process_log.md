@@ -536,3 +536,53 @@ docs/alb_target_group_notes.md
 
 This milestone confirms that the project now has a working load balanced access path and has moved closer to the original Phase 1 production style AWS architecture goal.
 
+
+## Security Group Tightening Confirmed
+
+Confirmed that direct public browser access to the EC2 FastAPI application on port `8000` is no longer available.
+
+The dashboard should now be accessed through the Application Load Balancer rather than through the EC2 public IP and port `8000`.
+
+Expected access pattern:
+
+```text
+User
+  ↓
+Application Load Balancer on port 80
+  ↓
+Target Group
+  ↓
+EC2 FastAPI application on port 8000
+```
+
+Confirmed result:
+
+```text
+Direct EC2 dashboard URL:
+http://35.172.140.39:8000/dashboard
+
+Result:
+Site could not be reached
+```
+
+This is the desired result because the EC2 application port should not be directly exposed to the browser.
+
+The working dashboard access path remains:
+
+```text
+http://\<ALB-DNS-NAME\>/dashboard
+```
+
+Current security group posture:
+
+```text
+ALB security group:
+- Allows HTTP traffic on port 80 from the current user IP
+
+EC2 security group:
+- Allows SSH on port 22 from the current user IP
+- Allows FastAPI traffic on port 8000 from the ALB security group only
+```
+
+This confirms that public user traffic now flows through the Application Load Balancer, while the EC2 application instance only accepts application traffic from the ALB security group.
+
