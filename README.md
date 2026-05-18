@@ -641,7 +641,7 @@ Near term:
 2. Maintain screenshot artifacts in S3
 3. Maintain current architecture documentation
 4. Keep the Application Load Balancer as the preferred public access path
-5. Tighten direct EC2 public access on port `8000`
+5. Maintain EC2 port `8000` access as restricted to the ALB security group
 6. Create a launch template
 7. Move toward Auto Scaling Group
 8. Prepare for Terraform conversion
@@ -661,7 +661,7 @@ This project demonstrates the ability to take a meaningful data application from
 The project story:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architectures, and placed the application behind an Application Load Balancer with Target Group health checks.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architectures, placed the application behind an Application Load Balancer with Target Group health checks, and tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group.
 ```
 
 The application workload gives the AWS architecture practical meaning by connecting cloud infrastructure to public sector analytics, geospatial intelligence, and future applied ML readiness.
