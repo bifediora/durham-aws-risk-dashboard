@@ -831,3 +831,49 @@ I built a geospatial risk intelligence dashboard using FastAPI and Durham public
 ```
 
 The next phase will strengthen the AWS architecture by validating the Auto Scaling Group transition, deciding whether to deregister the original manually created EC2 target, testing replacement behavior later, and eventually converting the infrastructure to Terraform with CI/CD deployment automation.
+
+## Phase 2 Readiness Checkpoint - Terraform Starter Workspace Complete
+
+The Terraform readiness milestone is complete.
+
+The project now has a clean Terraform starter workspace in:
+
+`infra/terraform/`
+
+Completed Terraform readiness work:
+
+- Created Terraform workspace folder structure.
+- Added Terraform README.
+- Added starter Terraform files:
+  - `main.tf`
+  - `variables.tf`
+  - `outputs.tf`
+  - `terraform.tfvars.example`
+- Installed Terraform locally on macOS.
+- Ran `terraform fmt -check`.
+- Ran `terraform init`.
+- Downloaded the AWS provider.
+- Committed `.terraform.lock.hcl`.
+- Ignored the local `.terraform/` working directory.
+- Ran `terraform validate`.
+
+Result:
+
+- Terraform is ready for future infrastructure as code development.
+- No AWS resources were created, changed, or destroyed.
+- The current manually created AWS architecture remains stable.
+- The project will continue using the hybrid learning approach.
+
+Current pause point:
+
+The project is ready to discuss the next major direction.
+
+Remaining options:
+
+- Option B: Begin designing the future Terraform architecture.
+- Option C: Return to dashboard application improvements.
+- Option D: Prepare the current AWS architecture for a portfolio write up.
+
+Recommended next discussion:
+
+Decide whether the next phase should focus on infrastructure as code, dashboard feature improvement, or professional portfolio presentation.
