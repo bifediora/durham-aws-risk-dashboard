@@ -331,6 +331,13 @@ Auto Scaling Group name:
 ```text
 durham-risk-dashboard-asg
 
+## Target Transition Strategy
+
+The current transition strategy is Option A:
+
+```text
+Keep both healthy targets temporarily.
+
 ## Health Check State
 
 The FastAPI health check endpoint is:
