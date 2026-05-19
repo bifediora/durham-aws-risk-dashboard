@@ -586,3 +586,158 @@ EC2 security group:
 
 This confirms that public user traffic now flows through the Application Load Balancer, while the EC2 application instance only accepts application traffic from the ALB security group.
 
+## Auto Scaling Group Milestone Completed
+
+Created and validated the Auto Scaling Group for the Durham Risk Intelligence Dashboard.
+
+This step moves the project further into the Phase 1 production style AWS architecture path by shifting from a single manually managed EC2 application instance toward an Auto Scaling based application layer.
+
+Previous architecture pattern:
+
+```text
+User
+  ↓
+Application Load Balancer on port 80
+  ↓
+Target Group
+  ↓
+Single manually created EC2 FastAPI application instance on port 8000
+```
+
+New architecture pattern:
+
+```text
+User
+  ↓
+Application Load Balancer on port 80
+  ↓
+Target Group
+  ↓
+Auto Scaling Group
+  ↓
+EC2 FastAPI application instance created from Launch Template
+```
+
+AWS resources completed:
+
+- Custom AMI:
+  - `durham-risk-dashboard-ami-v1`
+
+- Launch Template:
+  - `durham-risk-dashboard-lt`
+
+- Auto Scaling Group:
+  - `durham-risk-dashboard-asg`
+
+- Target Group:
+  - `durham-risk-dashboard-tg`
+
+- Application Load Balancer:
+  - `durham-risk-dashboard-alb`
+
+Auto Scaling Group capacity settings:
+
+```text
+Desired capacity: 1
+Minimum capacity: 1
+Maximum capacity: 2
+```
+
+Health check configuration:
+
+```text
+Health check type: ELB
+Health check grace period: 300 seconds
+Target Group health check path: /health
+Target Group health check success code: 200
+Application port: 8000
+```
+
+Validation completed:
+
+- Auto Scaling Group was created successfully.
+- Auto Scaling Group used the Launch Template.
+- Auto Scaling Group launched a new EC2 instance.
+- ASG created EC2 instance reached `Running` state.
+- ASG created EC2 instance reached `InService` lifecycle state.
+- ASG created EC2 instance showed `Healthy` status.
+- ASG created EC2 instance registered with the existing Target Group.
+- Target Group showed two healthy targets:
+  - Original manually created EC2 instance
+  - ASG created EC2 instance
+- ALB `/health` route was tested successfully.
+- ALB `/dashboard` route was tested successfully.
+
+Current confirmed request flow:
+
+```text
+User
+  ↓
+Application Load Balancer
+  ↓
+Target Group
+  ↓
+Healthy EC2 targets
+      ├── Original manually created EC2 instance
+      └── ASG created EC2 instance
+```
+
+Current confirmed ASG path:
+
+```text
+Custom AMI
+  ↓
+Launch Template
+  ↓
+Auto Scaling Group
+  ↓
+ASG created EC2 instance
+  ↓
+Target Group
+  ↓
+Healthy target
+```
+
+Security posture remains:
+
+```text
+Browser access:
+Application Load Balancer on port 80
+
+Application access:
+EC2 port 8000 from ALB security group only
+
+Administrative access:
+SSH port 22 from current user IP
+```
+
+Direct public browser access to EC2 port `8000` remains blocked.
+
+Important transition note:
+
+The original manually created EC2 instance has not been removed yet. This is intentional. Both the original EC2 target and the ASG created EC2 target are currently healthy in the Target Group.
+
+The original manually created EC2 instance should not be terminated or deregistered until the ASG created instance has been fully validated and the transition strategy is documented.
+
+A detailed Auto Scaling Group milestone note was also created:
+
+```text
+docs/auto_scaling_group_notes.md
+```
+
+This milestone confirms that the project now demonstrates:
+
+- Load balanced access
+- Target Group health checks
+- Custom AMI creation
+- Launch Template creation
+- Auto Scaling Group creation
+- ASG managed EC2 instance launch
+- Healthy ASG target registration
+- ALB routing to healthy backend targets
+
+Portfolio significance:
+
+```text
+The project now demonstrates a progression from a manually deployed EC2 FastAPI dashboard to a load balanced architecture with a reusable AMI, Launch Template, and Auto Scaling Group capable of creating healthy application instances behind an Application Load Balancer.
+```
