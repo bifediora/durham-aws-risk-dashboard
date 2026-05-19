@@ -866,3 +866,98 @@ Plan an ASG-only transition by deregistering the original manually created EC2 t
 ```
 
 Do not terminate the original EC2 instance yet.
+
+## Dual Target CloudWatch Monitoring Review Completed
+
+Reviewed CloudWatch and AWS console monitoring for the current dual target validation period.
+
+Current transition strategy remains Option A:
+
+```text
+Keep both healthy targets temporarily.
+```
+
+Current Target Group:
+
+```text
+durham-risk-dashboard-tg
+```
+
+Current healthy targets:
+
+```text
+1. Original manually created EC2 instance
+2. ASG-created EC2 instance
+```
+
+CloudWatch Application Load Balancer and Target Group metrics reviewed:
+
+```text
+HealthyHostCount
+UnHealthyHostCount
+HTTP response code metrics
+```
+
+Confirmed result:
+
+```text
+HealthyHostCount: 2
+UnHealthyHostCount: 0
+ALB 5XX errors: none
+Target 5XX errors: none
+```
+
+The live Target Group console also confirmed:
+
+```text
+Two healthy targets
+Zero unhealthy targets
+```
+
+Auto Scaling Group status was reviewed through the Auto Scaling Group console because ASG group metrics collection was not enabled during the initial ASG setup.
+
+Confirmed ASG result:
+
+```text
+Auto Scaling Group: durham-risk-dashboard-asg
+ASG-created instance: InService
+ASG-created instance health: Healthy
+Desired capacity: 1
+Minimum capacity: 1
+Maximum capacity: 2
+```
+
+Current confirmed architecture remains:
+
+```text
+User
+  ↓
+Application Load Balancer on port 80
+  ↓
+Target Group
+  ↓
+Two healthy EC2 targets
+      ├── Original manually created EC2 instance
+      └── ASG-created EC2 instance
+```
+
+Monitoring conclusion:
+
+```text
+The dual target architecture is stable.
+Both targets are healthy.
+No server side 5XX errors were observed.
+The Auto Scaling Group instance remains InService and Healthy.
+```
+
+Current decision:
+
+```text
+Do not deregister or terminate the original manually created EC2 instance yet.
+```
+
+Future monitoring improvement:
+
+```text
+Enable Auto Scaling Group metrics collection in CloudWatch if deeper ASG metric visibility is needed.
+```
