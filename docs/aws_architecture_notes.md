@@ -30,7 +30,10 @@ Monitoring has been added through CloudWatch and SNS. A private S3 bucket has al
 |---|---|
 | EC2 | Hosts the FastAPI dashboard application |
 | Application Load Balancer | Provides the public HTTP entry point for the dashboard |
-| Target Group | Routes ALB traffic to the EC2 FastAPI application on port `8000` |
+| Target Group | Routes ALB traffic to healthy EC2 FastAPI application targets on port `8000` |
+| Custom AMI | Captures the working EC2 dashboard server as a reusable image |
+| Launch Template | Defines how future EC2 dashboard instances are created |
+| Auto Scaling Group | Creates and manages EC2 application instances behind the Target Group |
 | Security Groups | Control inbound SSH, ALB access, and ALB to EC2 application traffic |
 | CloudWatch | Provides basic monitoring through a CPU alarm |
 | SNS | Sends alert notifications from CloudWatch |
@@ -50,24 +53,11 @@ Application Load Balancer on port 80
   ↓
 Target Group
   ↓
-EC2 FastAPI application on port 8000
+Healthy EC2 targets on port 8000
+      ├── Original manually created EC2 instance
+      └── ASG-created EC2 instance
   ↓
 Local CSV based sample data
-```
-
-Current preferred dashboard access pattern:
-
-```text
-http://<ALB-DNS-NAME>/dashboard
-```
-
-Current preferred health endpoint access pattern:
-
-```text
-http://<ALB-DNS-NAME>/health
-```
-
-Direct EC2 access on port `8000` may still be available temporarily for development and troubleshooting, but the preferred access path is now through the Application Load Balancer.
 
 ## Application Load Balancer Configuration
 
@@ -175,6 +165,12 @@ Final target health status:
 ```text
 Healthy
 ```
+## Auto Scaling Group Configuration
+
+Auto Scaling Group name:
+
+```text
+durham-risk-dashboard-asg
 
 ## Health Check Endpoint
 
@@ -516,14 +512,14 @@ S3 artifact and export storage
 
 | Component | Current State | Target State |
 |---|---|---|
-| Compute | Single EC2 instance | EC2 instances managed by launch template and Auto Scaling Group |
+| Compute | Original EC2 instance plus ASG-created EC2 instance | EC2 instances fully managed by Auto Scaling Group |
 | Public Access | Application Load Balancer on port `80` | Application Load Balancer with HTTPS and production DNS |
 | Application Port | EC2 receives app traffic on port `8000` from ALB | Private EC2 app traffic from ALB only |
 | Network | Default VPC | Custom VPC with public and private subnets |
-| Scaling | Manual single instance | Auto Scaling Group |
+| Scaling | Auto Scaling Group created with desired 1, min 1, max 2 | Auto Scaling policies and replacement testing |
 | Data Layer | Local CSV file | Future RDS or structured storage |
 | Artifacts | Private S3 bucket | Private S3 bucket managed by Terraform |
-| Monitoring | CloudWatch CPU alarm, SNS, and target group health check | Expanded metrics, logs, health checks, and alarms |
+| Monitoring | CloudWatch CPU alarm, SNS, Target Group health check, and ASG health status | Expanded metrics, logs, health checks, alarms, and scaling policies |
 | Deployment | Manual file copy, Git updates, and service restart | CI/CD pipeline |
 | Infrastructure | Manually created AWS resources | Terraform managed infrastructure |
 
@@ -531,17 +527,16 @@ S3 artifact and export storage
 
 Recommended next AWS architecture improvements:
 
-1. Keep user traffic flowing through the Application Load Balancer
-2. Maintain direct EC2 port `8000` access as blocked from the browser
-3. Keep EC2 port `8000` restricted to the ALB security group
-4. Create a launch template
-5. Add an Auto Scaling Group
-6. Attach the Auto Scaling Group to the existing Target Group
-7. Consider HTTPS with ACM certificate and Route 53 if using a domain
-8. Create a custom VPC
-9. Add public and private subnets
-10. Move application instances into private subnets
-11. Consider moving data storage to RDS or S3 based structured input
+1. Decide whether to keep or deregister the original manually created EC2 target
+2. Confirm cost impact of running both the original EC2 instance and the ASG-created instance
+3. Test ASG replacement behavior later
+4. Add Auto Scaling policies only after the basic ASG path is stable
+5. Consider HTTPS with ACM certificate and Route 53 if using a domain
+6. Create a custom VPC
+7. Add public and private subnets
+8. Move application instances into private subnets
+9. Consider moving data storage to RDS or S3 based structured input
+10. Prepare Terraform readiness notes
 
 ## Phase 2 Terraform Goal
 
@@ -585,7 +580,7 @@ This project demonstrates the ability to take a data driven application from loc
 The portfolio story is:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, documented the current and target AWS architectures, placed the application behind an Application Load Balancer with Target Group health checks, and tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, documented the current and target AWS architectures, placed the application behind an Application Load Balancer with Target Group health checks, tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group, created a custom AMI, built a Launch Template, and configured an Auto Scaling Group that launched a healthy EC2 application instance behind the Load Balancer.
 ```
 
 The application workload gives the AWS architecture practical meaning by connecting cloud infrastructure to public sector analytics, geospatial intelligence, and future applied ML readiness.
