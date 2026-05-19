@@ -1,0 +1,11 @@
+# Durham Risk Intelligence Dashboard
+# Example Terraform variable values
+#
+# Copy this file to terraform.tfvars when you are ready to run Terraform.
+#
+# Do not commit real secrets or sensitive values.
+
+aws_region   = "us-east-1"
+project_name = "durham-risk-dashboard"
+environment  = "dev"
+owner        = "Byron Ifediora"
