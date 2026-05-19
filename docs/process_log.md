@@ -961,3 +961,12 @@ Future monitoring improvement:
 ```text
 Enable Auto Scaling Group metrics collection in CloudWatch if deeper ASG metric visibility is needed.
 ```
+
+## Terraform Strategy Selected: Hybrid Learning Approach
+
+Selected the Terraform strategy for the next phase of the Durham Risk Intelligence Dashboard project.
+
+Chosen strategy:
+
+```text
+Option 3: Hybrid Learning Approach
