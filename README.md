@@ -52,6 +52,14 @@ ALB target group notes: documented
 Project checkpoint: documented
 Process log: documented
 GitHub repository: created and pushed
+Application Load Balancer: working
+Target Group: healthy
+Custom AMI: created
+Launch Template: created
+Auto Scaling Group: created
+ASG-created instance: InService and Healthy
+Target Group healthy targets: 2
+Dashboard through ALB: working
 ```
 
 ## Current AWS Architecture
@@ -132,7 +140,10 @@ Supporting AWS services include:
 |---|---|
 | EC2 | Hosts the FastAPI dashboard application |
 | Application Load Balancer | Provides the public HTTP entry point for the dashboard |
-| Target Group | Routes ALB traffic to the EC2 FastAPI application on port `8000` |
+| Target Group | Routes ALB traffic to healthy EC2 FastAPI application targets on port `8000` |
+| Custom AMI | Captures the working EC2 dashboard server as a reusable image |
+| Launch Template | Defines how future EC2 dashboard instances are created |
+| Auto Scaling Group | Creates and manages EC2 application instances behind the Target Group |
 | Security Groups | Control SSH access, ALB browser access, and ALB to EC2 application traffic |
 | CloudWatch | Provides basic monitoring through a CPU alarm |
 | SNS | Sends alert notifications from CloudWatch |
@@ -227,6 +238,12 @@ Final target health status:
 ```text
 Healthy
 ```
+## Auto Scaling Group
+
+Auto Scaling Group name:
+
+```text
+durham-risk-dashboard-asg
 
 ## Health Check
 
@@ -444,6 +461,10 @@ durham-aws-risk-dashboard/
     process_log.md
     project_checkpoint.md
     target_architecture_diagram.md
+    ami_launch_template_notes.md
+    auto_scaling_group_notes.md
+    auto_scaling_group_plan.md
+    launch_template_plan.md
   scripts/
     convert_geo_layers.py
     run_local.sh
@@ -587,14 +608,14 @@ S3 artifact and export storage
 
 | Component | Current State | Target State |
 |---|---|---|
-| Compute | Single EC2 instance | EC2 instances managed by launch template and Auto Scaling Group |
+| Compute | Original EC2 instance plus ASG-created EC2 instance | EC2 instances fully managed by Auto Scaling Group |
 | Public Access | Application Load Balancer on port `80` | Application Load Balancer with HTTPS and production DNS |
 | Application Port | EC2 receives app traffic on port `8000` from ALB | Private EC2 app traffic from ALB only |
 | Network | Default VPC | Custom VPC with public and private subnets |
-| Scaling | Manual single instance | Auto Scaling Group |
+| Scaling | Auto Scaling Group created with desired 1, min 1, max 2 | Auto Scaling policies and replacement testing |
 | Data Layer | Local CSV file | Future RDS or structured storage |
 | Artifacts | Private S3 bucket | Private S3 bucket managed by Terraform |
-| Monitoring | CloudWatch CPU alarm, SNS, and Target Group health check | Expanded metrics, logs, health checks, and alarms |
+| Monitoring | CloudWatch CPU alarm, SNS, Target Group health check, and ASG health status | Expanded metrics, logs, health checks, alarms, and scaling policies |
 | Deployment | Manual file copy, Git updates, and service restart | CI/CD pipeline |
 | Infrastructure | Manually created AWS resources | Terraform managed infrastructure |
 
@@ -642,8 +663,8 @@ Near term:
 3. Maintain current architecture documentation
 4. Keep the Application Load Balancer as the preferred public access path
 5. Maintain EC2 port `8000` access as restricted to the ALB security group
-6. Create a launch template
-7. Move toward Auto Scaling Group
+6. Validate the Auto Scaling Group transition
+7. Decide whether to keep or deregister the original manually created EC2 target
 8. Prepare for Terraform conversion
 
 Future:
@@ -661,7 +682,7 @@ This project demonstrates the ability to take a meaningful data application from
 The project story:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architectures, placed the application behind an Application Load Balancer with Target Group health checks, and tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architectures, placed the application behind an Application Load Balancer with Target Group health checks, tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group, created a custom AMI, built a Launch Template, and configured an Auto Scaling Group that launched a healthy EC2 application instance behind the Load Balancer.
 ```
 
 The application workload gives the AWS architecture practical meaning by connecting cloud infrastructure to public sector analytics, geospatial intelligence, and future applied ML readiness.
