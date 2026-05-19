@@ -809,3 +809,60 @@ After additional validation, decide whether to deregister the original manually 
 ```
 
 This keeps the project stable while preserving a clear path toward an ASG-managed architecture.
+
+## Option A Validation Confirmed
+
+Validated the Option A transition strategy for the Durham Risk Intelligence Dashboard.
+
+Option A means keeping both healthy targets temporarily in the Target Group:
+
+```text
+Target Group:
+durham-risk-dashboard-tg
+
+Healthy targets:
+1. Original manually created EC2 instance
+2. ASG-created EC2 instance
+```
+
+Validation completed:
+
+```text
+Target Group healthy targets: 2
+Original manually created EC2 target: Healthy
+ASG-created EC2 target: Healthy
+ALB /health route: Working
+ALB /dashboard route: Working
+```
+
+Current confirmed architecture:
+
+```text
+User
+  ↓
+Application Load Balancer on port 80
+  ↓
+Target Group
+  ↓
+Two healthy EC2 targets
+      ├── Original manually created EC2 instance
+      └── ASG-created EC2 instance
+```
+
+Decision:
+
+```text
+Keep both healthy targets temporarily.
+```
+
+Reason:
+
+This maintains a cautious and stable transition path. The original manually created EC2 instance remains available as a fallback while the ASG-created instance continues to prove it can reliably serve the dashboard.
+
+Next future transition:
+
+```text
+Plan an ASG-only transition by deregistering the original manually created EC2 target after additional validation.
+```
+
+Do not terminate the original EC2 instance yet.
