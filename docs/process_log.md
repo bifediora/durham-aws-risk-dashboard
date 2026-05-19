@@ -741,3 +741,71 @@ Portfolio significance:
 ```text
 The project now demonstrates a progression from a manually deployed EC2 FastAPI dashboard to a load balanced architecture with a reusable AMI, Launch Template, and Auto Scaling Group capable of creating healthy application instances behind an Application Load Balancer.
 ```
+## Option A Selected: Keep Both Healthy Targets Temporarily
+
+After validating the Auto Scaling Group milestone, the project selected Option A for the immediate transition strategy.
+
+Option A means keeping both healthy targets temporarily in the Target Group:
+
+```text
+Target Group:
+durham-risk-dashboard-tg
+
+Healthy targets:
+1. Original manually created EC2 instance
+2. ASG-created EC2 instance
+```
+
+This approach is intentionally cautious.
+
+The original manually created EC2 instance remains available as a known working fallback while the ASG-created instance continues to prove it can reliably serve the Durham Risk Intelligence Dashboard.
+
+Current confirmed architecture:
+
+```text
+User
+  ↓
+Application Load Balancer on port 80
+  ↓
+Target Group
+  ↓
+Two healthy EC2 targets
+      ├── Original manually created EC2 instance
+      └── ASG-created EC2 instance
+```
+
+Reason for keeping both targets temporarily:
+
+- The ASG-created instance is healthy and working
+- The original EC2 instance is also healthy and working
+- Keeping both targets reduces transition risk
+- The dashboard remains available through the ALB
+- The project can observe stability before moving to an ASG-managed-only application layer
+
+Current confirmed status:
+
+```text
+Application Load Balancer: working
+Target Group: working
+Original EC2 target: healthy
+ASG-created EC2 target: healthy
+Auto Scaling Group: created
+ASG instance: InService and Healthy
+ALB /health: working
+ALB /dashboard: working
+Direct EC2 public access on port 8000: blocked
+```
+
+Transition decision:
+
+```text
+Do not deregister or terminate the original manually created EC2 instance yet.
+```
+
+Next decision point:
+
+```text
+After additional validation, decide whether to deregister the original manually created EC2 target and allow the Auto Scaling Group to manage the application layer.
+```
+
+This keeps the project stable while preserving a clear path toward an ASG-managed architecture.
