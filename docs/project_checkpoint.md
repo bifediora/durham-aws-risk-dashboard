@@ -29,9 +29,9 @@ Current direction:
 3. Use screenshots and architecture diagrams as portfolio artifacts
 4. Continue AWS Phase 1 toward a production style architecture
 5. Keep the Application Load Balancer as the preferred access path
-6. Continue refining security group controls
-7. Move toward a launch template
-8. Move toward an Auto Scaling Group
+6. Maintain EC2 port `8000` access as restricted to the ALB security group
+7. Validate the Auto Scaling Group transition
+8. Decide whether to keep or deregister the original manually created EC2 target
 9. Prepare for Terraform
 10. Prepare for CI/CD
 
@@ -142,6 +142,9 @@ AWS resources currently used:
 - EC2
 - Application Load Balancer
 - Target Group
+- Custom AMI
+- Launch Template
+- Auto Scaling Group
 - Security Groups
 - CloudWatch
 - SNS
@@ -321,6 +324,12 @@ Final target health status:
 ```text
 Healthy
 ```
+## Auto Scaling Group State
+
+Auto Scaling Group name:
+
+```text
+durham-risk-dashboard-asg
 
 ## Health Check State
 
@@ -723,7 +732,7 @@ Local geospatial processing dependencies such as `geopandas`, `pyogrio`, and `sh
 
 The dashboard is strong enough for the current stage.
 
-The project should now prioritize AWS architecture maturity over additional dashboard functionality.
+The project is not yet complete as a production style AWS architecture, but it has moved beyond a basic single EC2 public IP deployment and now includes a working ALB, Target Group, custom AMI, Launch Template, and Auto Scaling Group.
 
 The current dashboard is useful as a portfolio workload because it demonstrates:
 
@@ -746,45 +755,42 @@ The project is not yet complete as a production style AWS architecture, but it h
 The current architecture is best described as:
 
 ```text
-Phase 1 AWS deployment in progress with a working FastAPI dashboard on EC2, persistent service management, CloudWatch and SNS monitoring, private S3 artifact storage, GitHub documentation, and a working Application Load Balancer with Target Group health checks.
+Phase 1 AWS deployment in progress with a working FastAPI dashboard on EC2, persistent service management, CloudWatch and SNS monitoring, private S3 artifact storage, GitHub documentation, a working Application Load Balancer with Target Group health checks, a custom AMI, a Launch Template, and an Auto Scaling Group that launched a healthy EC2 application target.
 ```
 
 ## Current Versus Target Architecture
 
 | Component | Current State | Target State |
 |---|---|---|
-| Compute | Single EC2 instance | EC2 instances managed by launch template and Auto Scaling Group |
+| Compute | Original EC2 instance plus ASG-created EC2 instance | EC2 instances fully managed by Auto Scaling Group |
 | Public Access | Application Load Balancer on port `80` | Application Load Balancer with HTTPS and production DNS |
 | Application Port | EC2 receives app traffic on port `8000` from ALB | Private EC2 app traffic from ALB only |
 | Network | Default VPC | Custom VPC with public and private subnets |
-| Scaling | Manual single instance | Auto Scaling Group |
+| Scaling | Auto Scaling Group created with desired 1, min 1, max 2 | Auto Scaling policies and replacement testing |
 | Data Layer | Local CSV file | Future RDS or structured storage |
 | Artifacts | Private S3 bucket | Private S3 bucket managed by Terraform |
-| Monitoring | CloudWatch CPU alarm, SNS, and Target Group health check | Expanded metrics, logs, health checks, and alarms |
+| Monitoring | CloudWatch CPU alarm, SNS, Target Group health check, and ASG health status | Expanded metrics, logs, health checks, alarms, and scaling policies |
 | Deployment | Manual file copy, Git updates, and service restart | CI/CD pipeline |
 | Infrastructure | Manually created AWS resources | Terraform managed infrastructure |
 
 ## Next Recommended Step
 
-The next recommended AWS build step is to decide whether to:
+The next recommended AWS step is to decide how to transition from the original manually created EC2 instance to the Auto Scaling Group managed application layer.
 
-1. Tighten direct EC2 public access so user traffic primarily flows through the ALB
-2. Create a launch template for the EC2 application instance
-3. Create an Auto Scaling Group and attach it to the existing Target Group
-
-Recommended immediate next move:
+Current Target Group state:
 
 ```text
-Review and tighten the security group path so the ALB is the preferred public entry point and EC2 port 8000 is not broadly exposed.
-```
+Two healthy targets:
+1. Original manually created EC2 instance
+2. ASG-created EC2 instance
 
-After that, the next real architecture build step should be:
+Review whether to keep both targets temporarily or deregister the original manually created EC2 target after confirming the ASG-created instance can carry the dashboard workload.
 
-```text
-Launch Template + Auto Scaling Group
-```
-
-This will continue moving the project toward the original Phase 1 production style architecture.
+Next Architecture Steps
+Test ASG replacement behavior
+Add basic scaling policies later
+Prepare Terraform readiness documentation
+Prepare CI/CD readiness documentation
 
 ## Guidance for Future Work
 
@@ -814,7 +820,7 @@ Focus next on:
 The current portfolio story is:
 
 ```text
-I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architecture, placed the application behind an Application Load Balancer with Target Group health checks, and tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group.
+I built a geospatial risk intelligence dashboard using FastAPI and Durham public safety data, deployed it to AWS EC2, added persistent service management, configured CloudWatch and SNS monitoring, created private S3 artifact storage, captured dashboard screenshots as S3 artifacts, pushed the project to GitHub, documented the current and target AWS architecture, placed the application behind an Application Load Balancer with Target Group health checks, tightened the security group path so public dashboard access flows through the ALB while the EC2 application port only accepts traffic from the ALB security group, created a custom AMI, built a Launch Template, and configured an Auto Scaling Group that launched a healthy EC2 application instance behind the Load Balancer.
 ```
 
-The next phase will strengthen the AWS architecture by preparing a launch template, moving toward Auto Scaling, and eventually converting the infrastructure to Terraform with CI/CD deployment automation.
+The next phase will strengthen the AWS architecture by validating the Auto Scaling Group transition, deciding whether to deregister the original manually created EC2 target, testing replacement behavior later, and eventually converting the infrastructure to Terraform with CI/CD deployment automation.
