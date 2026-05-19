@@ -71,3 +71,6 @@ artifacts/reports/*
 !artifacts/screenshots/.gitkeep
 !artifacts/diagrams/.gitkeep
 !artifacts/reports/.gitkeep
+
+# Terraform local working directory
+infra/terraform/.terraform/
