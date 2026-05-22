@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard | Durham Risk Intelligence</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="/static/css/styles.css">
 
@@ -11,106 +12,278 @@
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    />
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    />
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-    <main class="page-shell">
-        <section class="dashboard-header">
+    <main class="monitor-shell">
+        <header class="monitor-header">
             <div>
-                <p class="eyebrow">Public Safety Analytics</p>
-                <h1>Durham Risk Intelligence Dashboard</h1>
-                <p class="hero-text">
-                    A prototype dashboard using sample Durham arrest data to support cloud,
-                    geospatial, and future ML engineering portfolio development.
+                <p class="eyebrow">Informative Monitoring Dashboard</p>
+                <h1>Durham Arrest Activity Monitor</h1>
+                <p class="header-copy">
+                    An informative dashboard for understanding where arrest activity occurs,
+                    how it is distributed, and how patterns vary across space, categories, and census tract geography.
                 </p>
             </div>
 
-            <a class="button secondary" href="/">Return Home</a>
+            <div class="header-actions">
+                <div class="status-pill">
+                    <span></span>
+                    Local Dashboard
+                </div>
+                <a class="button secondary compact" href="/">Home</a>
+            </div>
+        </header>
+
+        <section class="control-strip">
+            <div>
+                <p class="eyebrow">Active Query</p>
+                <div id="activeFilterChips" class="chip-row">
+                    <span class="empty-chip">No chart filters selected</span>
+                </div>
+            </div>
+
+            <button id="resetFiltersButton" class="button secondary" type="button">
+                Clear Query
+            </button>
         </section>
 
-        <section class="metric-grid">
-            <article class="metric-card">
-                <p>Total Records</p>
-                <h2>{{ total_records }}</h2>
-            </article>
+        <section class="primary-monitoring-area">
+            <section class="kpi-row">
+                <article class="kpi-card primary-kpi">
+                    <p>Total Arrest Events</p>
+                    <h2 id="totalRecordsValue">{{ total_records }}</h2>
+                    <span>Durham County filtered records</span>
+                </article>
 
-            <article class="metric-card">
-                <p>Felony Records</p>
-                <h2>{{ felony_count }}</h2>
-            </article>
+                <article class="kpi-card">
+                    <p>Active Hotspot Areas</p>
+                    <h2 id="activeHotspotsValue">--</h2>
+                    <span>High-density activity clusters</span>
+                </article>
 
-            <article class="metric-card">
-                <p>Misdemeanor Records</p>
-                <h2>{{ misdemeanor_count }}</h2>
-            </article>
+                <article class="kpi-card">
+                    <p>Felony Event Share</p>
+                    <h2 id="felonyShareValue">--</h2>
+                    <span>Share of total arrest activity</span>
+                </article>
+
+                <article class="kpi-card">
+                    <p>Recent Activity Trend</p>
+                    <h2 id="recentTrendValue">--</h2>
+                    <span id="recentTrendSubtitle">Compared to previous 30 days</span>
+                </article>
+            </section>
+
+            <section class="map-analysis-grid">
+                <section class="panel map-panel primary-map-panel">
+                    <div class="panel-header">
+                        <div>
+                            <p class="eyebrow">Primary Spatial View</p>
+                            <h2>Spatial Distribution of Arrest Activity</h2>
+                            <p>
+                                Use the map to understand where arrest activity is occurring within Durham.
+                                Switch between point, cluster, density, and tract-level choropleth views.
+                            </p>
+                        </div>
+
+                        <div class="map-tools">
+                            <div class="segmented-control" id="mapModeControl">
+                                <button class="active" data-map-mode="points" type="button">
+                                    Point Mode
+                                </button>
+                                <button data-map-mode="cluster" type="button">
+                                    Cluster Mode
+                                </button>
+                                <button data-map-mode="hex" type="button">
+                                    Density Mode
+                                </button>
+                                <button data-map-mode="choropleth" type="button">
+                                    Choropleth Mode
+                                </button>
+                            </div>
+
+                            <div class="map-action-row">
+                                <select id="choroplethMetricSelect" class="map-select" aria-label="Choropleth metric">
+                                    <option value="total_arrests">Total arrests by tract</option>
+                                    <option value="felony_share">Felony share by tract</option>
+                                    <option value="activity_density">Activity density by tract</option>
+                                    <option value="night_share">Night activity share by tract</option>
+                                </select>
+
+                                <button id="togglePointsButton" class="button secondary compact" type="button">
+                                    Hide Points
+                                </button>
+
+                                <button id="zoomToExtentButton" class="button secondary compact" type="button">
+                                    Zoom to Extent
+                                </button>
+
+                                <div class="map-status" id="mapStatusText">
+                                    Loading map data
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="map"></div>
+                </section>
+
+                <aside class="right-analysis-stack">
+                    <article class="panel selector-panel side-chart-card">
+                        <div class="panel-header compact">
+                            <div>
+                                <p class="eyebrow">Click to Query</p>
+                                <h2>Arrests by District</h2>
+                            </div>
+                            <span class="hint">Multi-select</span>
+                        </div>
+
+                        <div class="side-chart-wrap">
+                            <canvas id="districtChart"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="panel selector-panel side-chart-card">
+                        <div class="panel-header compact">
+                            <div>
+                                <p class="eyebrow">Click to Query</p>
+                                <h2>Felony vs Misdemeanor</h2>
+                            </div>
+                            <span class="hint">Multi-select</span>
+                        </div>
+
+                        <div class="side-chart-wrap">
+                            <canvas id="severityChart"></canvas>
+                        </div>
+                    </article>
+                </aside>
+            </section>
         </section>
 
-        <section class="dashboard-grid">
-            <article class="panel">
-                <h2>Top District</h2>
-                <p class="large-value">{{ top_district }}</p>
-            </article>
-
-            <article class="panel">
-                <h2>Top Arrest Type</h2>
-                <p class="large-value">{{ top_arrest_type }}</p>
-            </article>
-
-            <article class="panel wide">
-                <h2>Most Common Offense Description</h2>
-                <p class="large-value">{{ top_description }}</p>
-            </article>
+        <section class="section-heading">
+            <div>
+                <p class="eyebrow">Category Distribution</p>
+                <h2>Click Charts to Query the Dashboard</h2>
+                <p>
+                    Select one or more chart categories to update the map, KPIs, temporal patterns,
+                    and selected records. In choropleth mode, clicking a census tract also filters the dashboard.
+                </p>
+            </div>
         </section>
 
-        <section class="panel">
-            <h2>Arrest Location Map</h2>
-            <p class="panel-description">
-                Interactive map showing sample Durham arrest locations converted from projected X/Y coordinates into latitude and longitude.
-            </p>
-            <div id="map"></div>
-        </section>
-
-        <section class="dashboard-grid">
-            <article class="panel">
-                <h2>Arrests by District</h2>
-                <canvas id="districtChart"></canvas>
-            </article>
-
-            <article class="panel">
-                <h2>Felony vs Misdemeanor</h2>
-                <canvas id="severityChart"></canvas>
-            </article>
-        </section>
-
-        <section class="panel">
-            <h2>Top 10 Offense Descriptions</h2>
-            <p class="panel-description">
-                Most common offense descriptions in the current sample dataset.
-            </p>
+        <section class="panel selector-panel">
+            <div class="panel-header compact">
+                <div>
+                    <p class="eyebrow">Click to Query</p>
+                    <h2>Top Offense Descriptions</h2>
+                </div>
+                <span class="hint">Select one or more offense categories</span>
+            </div>
             <canvas id="topOffensesChart"></canvas>
         </section>
 
-        <section class="panel">
-            <h2>Arrests by Hour</h2>
-            <p class="panel-description">
-                Distribution of arrest records by hour of day based on the sample dataset.
-            </p>
-            <canvas id="hourChart"></canvas>
+        <section class="section-heading">
+            <div>
+                <p class="eyebrow">Temporal Activity</p>
+                <h2>Temporal Activity Explorer</h2>
+                <p>
+                    Use the dropdown and date range controls to explore monthly, weekly, and hourly activity patterns for the current selected query.
+                </p>
+            </div>
         </section>
 
-        <section class="panel">
-            <h2>Next Dashboard Buildout</h2>
-            <ul class="clean-list">
-                <li>Filter controls for district, beat, arrest type, and severity</li>
-                <li>Record preview table for selected dashboard results</li>
-                <li>Expanded temporal analytics by day of week and month</li>
-                <li>Future ML readiness features for event pattern analysis</li>
-            </ul>
+        <section class="panel selector-panel temporal-explorer-panel">
+            <div class="panel-header compact temporal-panel-header">
+                <div>
+                    <p class="eyebrow">Temporal View</p>
+                    <h2 id="temporalChartTitle">Monthly Pattern</h2>
+                </div>
+
+                <div class="temporal-control-group">
+                    <select id="temporalViewSelect" class="map-select" aria-label="Temporal view">
+                        <option value="month">Monthly Pattern</option>
+                        <option value="weekday">Day of Week</option>
+                        <option value="hour">Hour of Day</option>
+                    </select>
+
+                    <div class="date-range-controls" aria-label="Temporal date range controls">
+                        <label class="date-control-label">
+                            <span>Start</span>
+                            <input id="startDateInput" class="date-input" type="date">
+                        </label>
+
+                        <label class="date-control-label">
+                            <span>End</span>
+                            <input id="endDateInput" class="date-input" type="date">
+                        </label>
+
+                        <button id="applyDateRangeButton" class="button secondary compact" type="button">
+                            Apply
+                        </button>
+
+                        <button id="clearDateRangeButton" class="button secondary compact" type="button">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dateRangeStatus" class="date-range-status">
+                Showing full available date range
+            </div>
+
+            <canvas id="temporalChart"></canvas>
+        </section>
+
+        <section class="panel selected-records-panel">
+            <div class="panel-header compact">
+                <div>
+                    <p class="eyebrow">Selected Area Details</p>
+                    <h2>Selected Records</h2>
+                    <p>
+                        Records shown below respond to chart queries, tract selections, temporal filters, and the current selected dashboard view.
+                    </p>
+                </div>
+                <span id="recordCountText" class="hint">Loading records</span>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Severity</th>
+                            <th>District</th>
+                            <th>Beat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                        <tr>
+                            <td colspan="7">Loading records</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
