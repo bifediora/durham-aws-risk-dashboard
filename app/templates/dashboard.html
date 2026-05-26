@@ -5,7 +5,7 @@
     <title>Dashboard | Durham Risk Intelligence</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/styles.css?v=map-interactions-20260525e">
 
     <link
         rel="stylesheet"
@@ -68,9 +68,9 @@
                 </article>
 
                 <article class="kpi-card">
-                    <p>Active Hotspot Areas</p>
-                    <h2 id="activeHotspotsValue">--</h2>
-                    <span>High-density activity clusters</span>
+                    <p>Arrest Rate</p>
+                    <h2 id="arrestRateValue">--</h2>
+                    <span>Events per 1,000 residents</span>
                 </article>
 
                 <article class="kpi-card">
@@ -94,7 +94,7 @@
                             <h2>Spatial Distribution of Arrest Activity</h2>
                             <p>
                                 Use the map to understand where arrest activity is occurring within Durham.
-                                Switch between point, cluster, density, and tract-level choropleth views.
+                                Switch between point, cluster, and tract-level choropleth views.
                             </p>
                         </div>
 
@@ -105,9 +105,6 @@
                                 </button>
                                 <button data-map-mode="cluster" type="button">
                                     Cluster Mode
-                                </button>
-                                <button data-map-mode="hex" type="button">
-                                    Density Mode
                                 </button>
                                 <button data-map-mode="choropleth" type="button">
                                     Choropleth Mode
@@ -122,9 +119,13 @@
                                     <option value="night_share">Night activity share by tract</option>
                                 </select>
 
-                                <button id="togglePointsButton" class="button secondary compact" type="button">
-                                    Hide Points
-                                </button>
+                                <div class="map-layer-control" aria-label="Event layers">
+                                    <span class="map-layer-control-label">Event Layers</span>
+                                    <label class="map-layer-toggle" for="pointsLayerToggle">
+                                        <input id="pointsLayerToggle" type="checkbox" checked>
+                                        <span>Points</span>
+                                    </label>
+                                </div>
 
                                 <button id="zoomToExtentButton" class="button secondary compact" type="button">
                                     Zoom to Extent
@@ -284,6 +285,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/dashboard.js?v=map-interactions-20260525e"></script>
 </body>
 </html>

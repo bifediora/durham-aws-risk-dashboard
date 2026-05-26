@@ -1,0 +1,57 @@
+
+================================================================================
+DURHAM NEIGHBORHOOD CONTEXT PROCESSING SUMMARY
+================================================================================
+Input: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/raw_geo/durham-hoods.geojson
+Raw CRS: EPSG:4326
+Projected CRS: EPSG:2264
+Web CRS: EPSG:4326
+Neighborhood features: 238
+Neighborhood columns: ['neighborhood_name', 'label_tier', 'geometry']
+Name field: neighborhood_name
+Missing/blank names: 0
+Duplicate names: 0
+Invalid geometries: 0
+Empty/missing geometries: 0
+Overlap pairs > 1 sq ft: 204
+Pairwise overlap area total: 0.013339 sq mi
+Largest overlap pairs:
+  - Crest Street / Old West Durham: 36089.1 sq ft (0.001295 sq mi)
+  - College View / North Carolina Central University: 13971.7 sq ft (0.000501 sq mi)
+  - Forest Hills / Parkside: 12779.6 sq ft (0.000458 sq mi)
+  - Penrith / Woodlake: 11916.8 sq ft (0.000427 sq mi)
+  - Bent Creek / Woodberry Forest / Mary Dell: 11122.0 sq ft (0.000399 sq mi)
+  - Park Ridge / Woodcroft: 8473.8 sq ft (0.000304 sq mi)
+  - Hope Valley / Hope Valley Farms: 8258.6 sq ft (0.000296 sq mi)
+  - Forest Hills / Rockwood: 7670.2 sq ft (0.000275 sq mi)
+  - Parkside / Rockwood: 7556.9 sq ft (0.000271 sq mi)
+  - Duke Park / Northgate Park: 7202.8 sq ft (0.000258 sq mi)
+  - Duke East Campus / Trinity Heights: 6360.5 sq ft (0.000228 sq mi)
+  - Trinity Heights / Walltown: 6345.4 sq ft (0.000228 sq mi)
+  - Burch Avenue / Duke West Campus: 5824.6 sq ft (0.000209 sq mi)
+  - Duke Park / Trinity Park: 5799.3 sq ft (0.000208 sq mi)
+  - Cole Mill Road / Waterford: 5678.9 sq ft (0.000204 sq mi)
+Label tier counts: {1: 12, 2: 25, 3: 201}
+Recommended label visibility: tier 1 at full-city extent; tiers 1-2 at mid zoom; all tiers when zoomed in.
+
+Census tracts processed: 68
+Primary neighborhood assignments: 66
+Tracts with no neighborhood overlap: 2
+Tracts with one neighborhood overlap: 3
+Tracts with multiple neighborhood overlaps: 63
+
+Projected output: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_neighborhoods_projected.geojson
+Leaflet-ready web output: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_neighborhoods_web.geojson
+Inspection summary: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_neighborhoods_inspection_summary.txt
+Updated enriched tract outputs:
+  - /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_arrests_tract_enriched.geojson
+  - /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_arrests_tract_enriched.csv
+  - /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_shootings_tract_enriched.geojson
+  - /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_shootings_tract_enriched.csv
+  - /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_tract_enriched.geojson
+  - /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_tract_enriched.csv
+
+Important interpretation note:
+Neighborhoods are a context, label, and public-interpretation layer only.
+Census tracts remain the statistical layer for ACS joins, normalized rates, choropleths, and demographic analytics.
+Manual visual QA against Durham reference imagery is still recommended before dashboard integration.

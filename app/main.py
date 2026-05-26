@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pyproj import Transformer
+from shapely.geometry import Point, Polygon, shape
 
 
 app = FastAPI(
@@ -21,9 +22,18 @@ app = FastAPI(
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 PROCESSED_ARRESTS_PATH = BASE_DIR / "data" / "processed" / "arrests_with_tract_join.csv"
-ENRICHED_TRACTS_PATH = BASE_DIR / "data" / "processed" / "durham_tract_enriched.geojson"
+ARRESTS_ENRICHED_TRACTS_PATH = BASE_DIR / "data" / "processed" / "durham_arrests_tract_enriched.geojson"
+LEGACY_ENRICHED_TRACTS_PATH = BASE_DIR / "data" / "processed" / "durham_tract_enriched.geojson"
+ENRICHED_TRACTS_PATH = (
+    ARRESTS_ENRICHED_TRACTS_PATH
+    if ARRESTS_ENRICHED_TRACTS_PATH.exists()
+    else LEGACY_ENRICHED_TRACTS_PATH
+)
+CHOROPLETH_CATALOG_PATH = BASE_DIR / "data" / "processed" / "durham_choropleth_metric_catalog.json"
+NEIGHBORHOODS_WEB_PATH = BASE_DIR / "data" / "processed" / "durham_neighborhoods_web.geojson"
 
 FULL_ARRESTS_PATH = BASE_DIR / "data" / "arrests.xlsx"
+FULL_SHOOTINGS_PATH = BASE_DIR / "data" / "shootings.xlsx"
 SAMPLE_ARRESTS_PATH = BASE_DIR / "data" / "sample_arrests.csv"
 
 TEMPLATES_DIR = BASE_DIR / "app" / "templates"
@@ -42,21 +52,33 @@ coordinate_transformer = Transformer.from_crs(
 
 CHOROPLETH_ALLOWED_METRICS = {
     "total_arrests",
+    "total_population",
     "arrest_activity_share",
     "arrests_per_1000_population",
     "felony_arrests_per_1000_population",
     "felony_share",
     "activity_density",
+    "arrests_density_per_sq_mi",
     "weekend_activity_share",
     "evening_night_activity_share",
     "night_share",
     "poverty_rate",
     "unemployment_rate",
     "median_household_income",
+    "average_household_size",
     "youth_population_share",
     "senior_population_share",
+    "no_high_school_diploma_rate",
     "housing_vacancy_rate",
     "bachelors_or_higher_rate",
+    "white_non_hispanic_share",
+    "black_non_hispanic_share",
+    "hispanic_or_latino_share",
+    "asian_non_hispanic_share",
+    "american_indian_alaska_native_non_hispanic_share",
+    "native_hawaiian_pacific_islander_non_hispanic_share",
+    "other_race_non_hispanic_share",
+    "two_or_more_races_non_hispanic_share",
     "arrest_concentration_index",
     "population_density",
 }
@@ -65,11 +87,22 @@ CHOROPLETH_ALLOWED_METRICS = {
 STATIC_ENRICHED_METRICS = {
     "poverty_rate",
     "unemployment_rate",
+    "total_population",
     "median_household_income",
+    "average_household_size",
     "youth_population_share",
     "senior_population_share",
+    "no_high_school_diploma_rate",
     "housing_vacancy_rate",
     "bachelors_or_higher_rate",
+    "white_non_hispanic_share",
+    "black_non_hispanic_share",
+    "hispanic_or_latino_share",
+    "asian_non_hispanic_share",
+    "american_indian_alaska_native_non_hispanic_share",
+    "native_hawaiian_pacific_islander_non_hispanic_share",
+    "other_race_non_hispanic_share",
+    "two_or_more_races_non_hispanic_share",
     "arrest_concentration_index",
     "population_density",
 }
@@ -131,6 +164,29 @@ def parse_selected_values(value: Optional[str]):
     ]
 
     return values
+
+
+def normalize_tract_geoid(value):
+    if value is None or pd.isna(value):
+        return "Not assigned"
+
+    text = str(value).strip()
+
+    if not text or text.lower() in {"nan", "none", "not assigned"}:
+        return "Not assigned"
+
+    if text.endswith(".0"):
+        text = text[:-2]
+
+    digits = "".join(character for character in text if character.isdigit())
+
+    if len(digits) == 11:
+        return digits
+
+    if digits and len(digits) < 11:
+        return digits.zfill(11)
+
+    return text
 
 
 def normalize_bool_series(series):
@@ -283,7 +339,7 @@ def normalize_arrests(df):
     if "tract_area_sq_mi" not in df.columns:
         df["tract_area_sq_mi"] = pd.NA
 
-    df["tract_geoid"] = df["tract_geoid"].fillna("Not assigned").astype(str)
+    df["tract_geoid"] = df["tract_geoid"].apply(normalize_tract_geoid)
     df["tract_name"] = df["tract_name"].fillna("Not assigned").astype(str)
     df["tract_area_sq_mi"] = pd.to_numeric(df["tract_area_sq_mi"], errors="coerce")
 
@@ -329,6 +385,40 @@ def load_arrest_data():
 def get_data_source():
     _, source = load_arrest_data_cached()
     return source
+
+
+@lru_cache(maxsize=1)
+def load_shooting_points_cached():
+    if not FULL_SHOOTINGS_PATH.exists():
+        return pd.DataFrame()
+
+    try:
+        shootings = pd.read_excel(FULL_SHOOTINGS_PATH)
+    except Exception:
+        return pd.DataFrame()
+
+    if "X" not in shootings.columns or "Y" not in shootings.columns:
+        return pd.DataFrame()
+
+    shootings = shootings.copy()
+    shootings["X"] = pd.to_numeric(shootings["X"], errors="coerce")
+    shootings["Y"] = pd.to_numeric(shootings["Y"], errors="coerce")
+    shootings = shootings[shootings["X"].notna() & shootings["Y"].notna()].copy()
+
+    lon_lat_values = shootings.apply(
+        lambda row: convert_xy_to_lon_lat(row["X"], row["Y"]),
+        axis=1,
+    )
+
+    shootings["longitude"] = [value[0] for value in lon_lat_values]
+    shootings["latitude"] = [value[1] for value in lon_lat_values]
+    shootings = shootings[shootings["longitude"].notna() & shootings["latitude"].notna()].copy()
+
+    return shootings
+
+
+def load_shooting_points():
+    return load_shooting_points_cached().copy()
 
 
 @lru_cache(maxsize=1)
@@ -389,6 +479,87 @@ def get_enriched_tract_lookup():
     return lookup
 
 
+@lru_cache(maxsize=1)
+def load_choropleth_metric_catalog():
+    fallback_catalog = {
+        "public_facing_guidance": (
+            "Prioritize normalized rates and percentage-based context for tract comparison."
+        ),
+        "arrests": [
+            {
+                "key": "arrests_per_1000_population",
+                "label": "Arrests per 1,000 population",
+                "format": "rate",
+                "priority": "primary",
+            },
+            {
+                "key": "felony_share",
+                "label": "Felony share",
+                "format": "percent",
+                "priority": "primary",
+            },
+            {
+                "key": "total_arrests",
+                "label": "Total arrests",
+                "format": "count",
+                "priority": "operational",
+            },
+            {
+                "key": "poverty_rate",
+                "label": "Poverty rate",
+                "format": "percent",
+                "priority": "vulnerability",
+            },
+            {
+                "key": "median_household_income",
+                "label": "Median household income",
+                "format": "currency",
+                "priority": "context",
+            },
+        ],
+        "shootings": [],
+    }
+
+    if not CHOROPLETH_CATALOG_PATH.exists():
+        return fallback_catalog
+
+    try:
+        with CHOROPLETH_CATALOG_PATH.open("r", encoding="utf-8") as file:
+            catalog = json.load(file)
+    except Exception:
+        return fallback_catalog
+
+    arrests_metrics = []
+
+    for metric in catalog.get("arrests", []):
+        key = metric.get("key")
+
+        if key in CHOROPLETH_ALLOWED_METRICS:
+            arrests_metrics.append(metric)
+
+    catalog["arrests"] = arrests_metrics or fallback_catalog["arrests"]
+
+    return catalog
+
+
+@lru_cache(maxsize=1)
+def load_neighborhood_context_geojson():
+    if not NEIGHBORHOODS_WEB_PATH.exists():
+        return {
+            "type": "FeatureCollection",
+            "features": [],
+        }
+
+    try:
+        with NEIGHBORHOODS_WEB_PATH.open("r", encoding="utf-8") as file:
+            return json.load(file)
+    except Exception:
+        return {
+            "type": "FeatureCollection",
+            "features": [],
+        }
+
+
 def apply_filters(
     df,
     districts: Optional[str] = None,
@@ -407,7 +578,10 @@ def apply_filters(
     selected_offenses = parse_selected_values(offenses)
     selected_arrest_types = parse_selected_values(arrest_types)
     selected_beats = parse_selected_values(beats)
-    selected_tract_geoids = parse_selected_values(tract_geoids)
+    selected_tract_geoids = [
+        normalize_tract_geoid(geoid)
+        for geoid in parse_selected_values(tract_geoids)
+    ]
 
     if selected_districts:
         filtered = filtered[
@@ -436,7 +610,7 @@ def apply_filters(
 
     if selected_tract_geoids:
         filtered = filtered[
-            filtered["tract_geoid"].fillna("").astype(str).isin(selected_tract_geoids)
+            filtered["tract_geoid"].apply(normalize_tract_geoid).isin(selected_tract_geoids)
         ]
 
     if start_date:
@@ -522,7 +696,25 @@ def count_active_hotspot_areas(df):
     return int((grouped["count"] >= hotspot_threshold).sum())
 
 
-def calculate_recent_activity_trend(df):
+def get_population_for_geoids(geoids=None):
+    selected_geoids = {str(geoid).zfill(11) for geoid in geoids or [] if str(geoid).strip()}
+    total_population = 0.0
+
+    for tract in load_enriched_tract_features():
+        geoid = str(tract.get("geoid") or "").zfill(11)
+
+        if selected_geoids and geoid not in selected_geoids:
+            continue
+
+        population = safe_float((tract.get("properties") or {}).get("total_population"))
+
+        if population:
+            total_population += population
+
+    return total_population
+
+
+def calculate_recent_activity_trend(df, reference_date=None):
     if df.empty or "event_date" not in df.columns:
         return {
             "label": "Stable",
@@ -543,7 +735,11 @@ def calculate_recent_activity_trend(df):
             "previous_count": 0,
         }
 
-    latest_date = valid_dates.max()
+    latest_date = pd.to_datetime(reference_date, errors="coerce") if reference_date is not None else valid_dates.max()
+
+    if pd.isna(latest_date):
+        latest_date = valid_dates.max()
+
     current_start = latest_date - pd.Timedelta(days=29)
     previous_start = current_start - pd.Timedelta(days=30)
     previous_end = current_start - pd.Timedelta(days=1)
@@ -583,11 +779,14 @@ def calculate_recent_activity_trend(df):
     }
 
 
-def build_summary(df, baseline_total=None):
+def build_summary(df, baseline_total=None, rate_population=None, trend_reference_date=None):
     total_records = len(df)
 
     if baseline_total is None:
         baseline_total = total_records
+
+    if rate_population is None:
+        rate_population = get_population_for_geoids()
 
     felony_count = int((df["severity_label"] == "Felony").sum()) if not df.empty else 0
     misdemeanor_count = int((df["severity_label"] == "Misdemeanor").sum()) if not df.empty else 0
@@ -602,7 +801,10 @@ def build_summary(df, baseline_total=None):
         night_count = int((df["time_period"] == "Night").sum())
 
     active_hotspot_areas = count_active_hotspot_areas(df)
-    recent_activity_trend = calculate_recent_activity_trend(df)
+    recent_activity_trend = calculate_recent_activity_trend(
+        df,
+        reference_date=trend_reference_date,
+    )
 
     return {
         "total_records": total_records,
@@ -618,6 +820,8 @@ def build_summary(df, baseline_total=None):
         "night_count": night_count,
         "night_share": pct(night_count, total_records),
         "active_hotspot_areas": active_hotspot_areas,
+        "arrest_rate_per_1000_population": rate_per_1000(total_records, rate_population),
+        "arrest_rate_population": int(rate_population or 0),
         "recent_activity_trend_label": recent_activity_trend["label"],
         "recent_activity_trend_symbol": recent_activity_trend["symbol"],
         "recent_activity_trend_pct": recent_activity_trend["percent_change"],
@@ -746,6 +950,14 @@ def build_dynamic_tract_summary_lookup(df, baseline_total=None):
 
 def get_metric_value(properties, dynamic_summary, metric):
     geoid = str(properties.get("tract_geoid") or properties.get("geoid") or "")
+
+    if metric == "no_high_school_diploma_rate":
+        high_school_or_higher_rate = safe_float(properties.get("high_school_or_higher_rate"))
+
+        if high_school_or_higher_rate is None:
+            return 0.0
+
+        return max(0.0, round(100.0 - high_school_or_higher_rate, 1))
 
     if metric in STATIC_ENRICHED_METRICS:
         return safe_float(properties.get(metric)) or 0.0
@@ -876,6 +1088,181 @@ def api_filter_options():
     }
 
 
+@app.get("/api/choropleth-metrics")
+def api_choropleth_metrics():
+    catalog = load_choropleth_metric_catalog()
+
+    return {
+        "status": "success",
+        "default_metric": "arrests_per_1000_population",
+        "catalog": catalog,
+        "active_event_layer": "arrests",
+        "available_event_layers": {
+            "arrests": True,
+            "shootings": any(
+                metric.get("available", False)
+                for metric in catalog.get("shootings", [])
+                if isinstance(metric, dict)
+            ),
+        },
+    }
+
+
+@app.get("/api/neighborhoods")
+def api_neighborhoods():
+    geojson = load_neighborhood_context_geojson()
+
+    return {
+        "status": "success",
+        "role": "context_layer",
+        "statistical_layer": "census_tracts",
+        "geojson": geojson,
+    }
+
+
+@app.post("/api/spatial-selection")
+async def api_spatial_selection(request: Request):
+    payload = await request.json()
+    coordinates = payload.get("coordinates", [])
+    target_layer = str(payload.get("target_layer") or "tracts").lower()
+
+    if target_layer not in {"points", "tracts", "neighborhoods"}:
+        target_layer = "tracts"
+
+    if not isinstance(coordinates, list) or len(coordinates) < 3:
+        return {
+            "status": "error",
+            "message": "Selection polygon requires at least three coordinates.",
+        }
+
+    polygon_points = []
+
+    for coordinate in coordinates:
+        if not isinstance(coordinate, list) or len(coordinate) < 2:
+            continue
+
+        lon = safe_float(coordinate[0])
+        lat = safe_float(coordinate[1])
+
+        if lon is None or lat is None:
+            continue
+
+        polygon_points.append((lon, lat))
+
+    if len(polygon_points) < 3:
+        return {
+            "status": "error",
+            "message": "Selection polygon coordinates were invalid.",
+        }
+
+    if polygon_points[0] != polygon_points[-1]:
+        polygon_points.append(polygon_points[0])
+
+    selection_polygon = Polygon(polygon_points)
+
+    if selection_polygon.is_empty or not selection_polygon.is_valid:
+        return {
+            "status": "error",
+            "message": "Selection polygon is empty or invalid.",
+        }
+
+    selected_tract_geoids = set()
+
+    if target_layer == "tracts":
+        for feature in load_enriched_tract_features():
+            geometry = feature.get("geometry")
+
+            if not geometry:
+                continue
+
+            try:
+                tract_geometry = shape(geometry)
+            except Exception:
+                continue
+
+            if tract_geometry.intersects(selection_polygon):
+                selected_tract_geoids.add(str(feature["geoid"]))
+
+    arrests = load_arrest_data()
+
+    if not arrests.empty and {"longitude", "latitude"}.issubset(arrests.columns):
+        arrest_mask = arrests.apply(
+            lambda row: selection_polygon.contains(
+                Point(float(row["longitude"]), float(row["latitude"]))
+            )
+            if pd.notna(row.get("longitude")) and pd.notna(row.get("latitude"))
+            else False,
+            axis=1,
+        )
+        selected_arrests = arrests[arrest_mask].copy()
+    else:
+        selected_arrests = pd.DataFrame()
+
+    if target_layer == "points" and not selected_arrests.empty and "tract_geoid" in selected_arrests.columns:
+        selected_tract_geoids.update(
+            selected_arrests["tract_geoid"]
+            .dropna()
+            .astype(str)
+            .map(lambda value: value.zfill(11))
+            .tolist()
+        )
+
+    selected_neighborhood_names = set()
+
+    if target_layer == "neighborhoods":
+        neighborhoods_geojson = load_neighborhood_context_geojson()
+
+        for feature in neighborhoods_geojson.get("features", []):
+            geometry = feature.get("geometry")
+
+            if not geometry:
+                continue
+
+            try:
+                neighborhood_geometry = shape(geometry)
+            except Exception:
+                continue
+
+            if not neighborhood_geometry.intersects(selection_polygon):
+                continue
+
+            properties = feature.get("properties") or {}
+            neighborhood_name = (
+                properties.get("neighborhood_name")
+                or properties.get("name")
+                or properties.get("Name")
+            )
+
+            if neighborhood_name:
+                selected_neighborhood_names.add(str(neighborhood_name))
+
+    shootings = load_shooting_points()
+
+    if not shootings.empty:
+        shooting_mask = shootings.apply(
+            lambda row: selection_polygon.contains(
+                Point(float(row["longitude"]), float(row["latitude"]))
+            )
+            if pd.notna(row.get("longitude")) and pd.notna(row.get("latitude"))
+            else False,
+            axis=1,
+        )
+        selected_shootings = shootings[shooting_mask].copy()
+    else:
+        selected_shootings = pd.DataFrame()
+
+    return {
+        "status": "success",
+        "target_layer": target_layer,
+        "tract_geoids": sorted(selected_tract_geoids),
+        "tract_count": len(selected_tract_geoids),
+        "neighborhood_names": sorted(selected_neighborhood_names),
+        "neighborhood_count": len(selected_neighborhood_names),
+        "arrest_point_count": int(len(selected_arrests)),
+        "shooting_point_count": int(len(selected_shootings)),
+    }
+
+
 @app.get("/api/summary")
 def api_summary(
     districts: Optional[str] = None,
@@ -909,9 +1296,21 @@ def api_summary(
         end_date=end_date,
     )
 
+    selected_tract_geoids = parse_selected_values(tract_geoids)
+    rate_population = get_population_for_geoids(selected_tract_geoids or None)
+    trend_reference_date = None
+
+    if "event_date" in baseline_df.columns and not baseline_df.empty:
+        trend_reference_date = baseline_df["event_date"].dropna().max()
+
     return {
         "status": "success",
-        "summary": build_summary(df, baseline_total=len(baseline_df)),
+        "summary": build_summary(
+            df,
+            baseline_total=len(baseline_df),
+            rate_population=rate_population,
+            trend_reference_date=trend_reference_date,
+        ),
         "query_context": build_query_context(
             districts=districts,
             severities=severities,

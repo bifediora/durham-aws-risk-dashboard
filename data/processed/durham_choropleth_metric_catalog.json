@@ -1,0 +1,195 @@
+{
+  "public_facing_guidance": "Use normalized rates and percentage-based contextual indicators for tract comparison. Raw event counts remain available for operational monitoring, but should not be the primary choropleth interpretation.",
+  "arrests": [
+    {
+      "key": "arrests_per_1000_population",
+      "label": "Arrests per 1,000 population",
+      "format": "rate",
+      "priority": "primary"
+    },
+    {
+      "key": "felony_share",
+      "label": "Felony share",
+      "format": "percent",
+      "priority": "primary"
+    },
+    {
+      "key": "total_arrests",
+      "label": "Total arrests",
+      "format": "count",
+      "priority": "operational"
+    },
+    {
+      "key": "total_population",
+      "label": "Total population",
+      "format": "count",
+      "priority": "context"
+    },
+    {
+      "key": "median_household_income",
+      "label": "Median household income",
+      "format": "currency",
+      "priority": "context"
+    },
+    {
+      "key": "average_household_size",
+      "label": "Average household size",
+      "format": "decimal",
+      "priority": "context"
+    },
+    {
+      "key": "bachelors_or_higher_rate",
+      "label": "Bachelor's degree or higher",
+      "format": "percent",
+      "priority": "context"
+    },
+    {
+      "key": "poverty_rate",
+      "label": "Poverty rate",
+      "format": "percent",
+      "priority": "vulnerability"
+    },
+    {
+      "key": "housing_vacancy_rate",
+      "label": "Vacancy rate",
+      "format": "percent",
+      "priority": "vulnerability"
+    },
+    {
+      "key": "youth_population_share",
+      "label": "Population under 18",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "senior_population_share",
+      "label": "Population 65 and older",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "no_high_school_diploma_rate",
+      "label": "No high school diploma",
+      "format": "percent",
+      "priority": "context"
+    },
+    {
+      "key": "white_non_hispanic_share",
+      "label": "White population share",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "black_non_hispanic_share",
+      "label": "Black population share",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "hispanic_or_latino_share",
+      "label": "Hispanic or Latino population share",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "asian_non_hispanic_share",
+      "label": "Asian population share",
+      "format": "percent",
+      "priority": "composition"
+    }
+  ],
+  "shootings": [
+    {
+      "key": "shootings_per_1000_population",
+      "label": "Shootings per 1,000 population",
+      "format": "rate",
+      "priority": "primary",
+      "available": true
+    },
+    {
+      "key": "total_shootings",
+      "label": "Total shootings",
+      "format": "count",
+      "priority": "operational",
+      "available": true
+    },
+    {
+      "key": "total_population",
+      "label": "Total population",
+      "format": "count",
+      "priority": "context"
+    },
+    {
+      "key": "median_household_income",
+      "label": "Median household income",
+      "format": "currency",
+      "priority": "context"
+    },
+    {
+      "key": "average_household_size",
+      "label": "Average household size",
+      "format": "decimal",
+      "priority": "context"
+    },
+    {
+      "key": "bachelors_or_higher_rate",
+      "label": "Bachelor's degree or higher",
+      "format": "percent",
+      "priority": "context"
+    },
+    {
+      "key": "poverty_rate",
+      "label": "Poverty rate",
+      "format": "percent",
+      "priority": "vulnerability"
+    },
+    {
+      "key": "housing_vacancy_rate",
+      "label": "Vacancy rate",
+      "format": "percent",
+      "priority": "vulnerability"
+    },
+    {
+      "key": "youth_population_share",
+      "label": "Population under 18",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "senior_population_share",
+      "label": "Population 65 and older",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "no_high_school_diploma_rate",
+      "label": "No high school diploma",
+      "format": "percent",
+      "priority": "context"
+    },
+    {
+      "key": "white_non_hispanic_share",
+      "label": "White population share",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "black_non_hispanic_share",
+      "label": "Black population share",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "hispanic_or_latino_share",
+      "label": "Hispanic or Latino population share",
+      "format": "percent",
+      "priority": "composition"
+    },
+    {
+      "key": "asian_non_hispanic_share",
+      "label": "Asian population share",
+      "format": "percent",
+      "priority": "composition"
+    }
+  ]
+}

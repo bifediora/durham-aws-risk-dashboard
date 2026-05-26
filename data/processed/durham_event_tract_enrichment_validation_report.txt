@@ -1,0 +1,64 @@
+Starting Durham event tract enrichment workflow.
+Analytical principle: arrests and shootings remain separate event layers.
+ACS variable coverage:
+  Existing required columns: 15
+  Missing required columns: 0
+    existing: total_population
+    existing: median_household_income
+    existing: average_household_size
+    existing: bachelors_or_higher_rate
+    existing: white_non_hispanic_share
+    existing: black_non_hispanic_share
+    existing: hispanic_or_latino_share
+    existing: asian_non_hispanic_share
+    existing: american_indian_alaska_native_non_hispanic_share
+    existing: native_hawaiian_pacific_islander_non_hispanic_share
+    existing: other_race_non_hispanic_share
+    existing: two_or_more_races_non_hispanic_share
+    existing: poverty_rate
+    existing: housing_vacancy_rate
+    existing: youth_population_share
+
+================================================================================
+DURHAM EVENT TRACT ENRICHMENT VALIDATION REPORT
+================================================================================
+Tract geometry file: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/app/static/geojson/durham_city_intersecting_tracts.geojson
+Tract CRS: EPSG:4326
+Tract count: 68
+Unique tract GEOIDs: 68
+Duplicate tract GEOIDs: 0
+Missing tract GEOIDs: 0
+
+ACS demographic file: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_acs_tract_demographics.csv
+ACS records: 68
+ACS unique GEOIDs: 68
+ACS duplicate GEOIDs: 0
+ACS columns already available: total_population, median_household_income, average_household_size, bachelors_or_higher_rate, white_non_hispanic_share, black_non_hispanic_share, hispanic_or_latino_share, asian_non_hispanic_share, american_indian_alaska_native_non_hispanic_share, native_hawaiian_pacific_islander_non_hispanic_share, other_race_non_hispanic_share, two_or_more_races_non_hispanic_share, poverty_rate, housing_vacancy_rate, youth_population_share
+ACS columns newly retrieved: none
+Tract GEOIDs missing from ACS: 0
+
+Arrests source: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/arrests_with_tract_join.csv
+Arrest records assigned to tracts: 65,955
+Arrest tracts with events: 68
+Arrest enriched tract records: 68
+Arrest output CSV: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_arrests_tract_enriched.csv
+Arrest output GeoJSON: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_arrests_tract_enriched.geojson
+
+Shootings source: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/shootings.xlsx
+Shooting records assigned to tracts: 5,417
+Shooting tracts with events: 68
+Shooting enriched tract records: 68
+Shooting output CSV: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_shootings_tract_enriched.csv
+Shooting output GeoJSON: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_shootings_tract_enriched.geojson
+
+Key summary statistics:
+  total_population: min=0.00, median=4713.50, max=10863.00
+  average_household_size: min=1.46, median=2.23, max=3.56
+  median_household_income: min=31875.00, median=79963.00, max=221250.00
+  poverty_rate: min=1.00, median=10.27, max=48.06
+  housing_vacancy_rate: min=0.00, median=6.50, max=25.45
+  youth_population_share: min=0.21, median=19.10, max=35.55
+  bachelors_or_higher_rate: min=16.03, median=55.26, max=100.00
+  shootings_per_1000_population: min=0.00, median=9.05, max=145.15
+
+Validation report saved to: /Users/byron/Documents/Projects/durham-aws-risk-dashboard/data/processed/durham_event_tract_enrichment_validation_report.txt

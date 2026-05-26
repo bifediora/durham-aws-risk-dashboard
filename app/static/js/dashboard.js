@@ -9,11 +9,31 @@ let cityBoundaryLayer = null;
 let intersectingTractsLayer = null;
 let countyBoundaryLayer = null;
 let policeBeatsLayer = null;
+let neighborhoodsLayer = null;
+let pointOverlayLayer = null;
+let selectedTractHighlightLayer = null;
+let selectedNeighborhoodHighlightLayer = null;
+let mapLegendControl = null;
+let mapLegendElement = null;
+let selectionControlElement = null;
 let currentMapMode = "points";
 let currentChoroplethMetric = "total_arrests";
 let currentTemporalView = "month";
 let pointsVisible = true;
 let lastPointLayer = null;
+let selectionMode = null;
+let selectionLayer = null;
+let selectionStartLatLng = null;
+let selectionLatLngs = [];
+let activeSelectionCoordinates = [];
+let activeSelectionLayer = null;
+let selectedNeighborhoodNames = new Set();
+let isDrawingSelection = false;
+let suppressNextMapClear = false;
+let spatialSelectionSummary = null;
+let suppressTractPopupClose = false;
+let summaryRequestToken = 0;
+let recordsRequestToken = 0;
 
 const charts = {};
 
@@ -33,9 +53,74 @@ const dateFilters = {
 
 const CHOROPLETH_METRIC_LABELS = {
     total_arrests: "Total arrests",
+    arrests_per_1000_population: "Arrests per 1,000 population",
     felony_share: "Felony share",
-    activity_density: "Activity density",
-    night_share: "Night activity share"
+    median_household_income: "Median household income",
+    average_household_size: "Average household size",
+    poverty_rate: "Poverty rate",
+    housing_vacancy_rate: "Vacancy rate",
+    youth_population_share: "Population under 18",
+    senior_population_share: "Population 65 and older",
+    no_high_school_diploma_rate: "No high school diploma",
+    bachelors_or_higher_rate: "Bachelor's degree or higher",
+    white_non_hispanic_share: "White population share",
+    black_non_hispanic_share: "Black population share",
+    hispanic_or_latino_share: "Hispanic or Latino population share",
+    asian_non_hispanic_share: "Asian population share"
+};
+
+const CHOROPLETH_METRIC_FORMATS = {
+    total_arrests: "count",
+    total_population: "count",
+    arrests_per_1000_population: "rate",
+    felony_share: "percent",
+    median_household_income: "currency",
+    average_household_size: "decimal",
+    poverty_rate: "percent",
+    housing_vacancy_rate: "percent",
+    youth_population_share: "percent",
+    senior_population_share: "percent",
+    no_high_school_diploma_rate: "percent",
+    bachelors_or_higher_rate: "percent",
+    white_non_hispanic_share: "percent",
+    black_non_hispanic_share: "percent",
+    hispanic_or_latino_share: "percent",
+    asian_non_hispanic_share: "percent"
+};
+
+const CENSUS_CONTEXT_METRICS = new Set([
+    "total_population",
+    "median_household_income",
+    "average_household_size",
+    "poverty_rate",
+    "unemployment_rate",
+    "housing_vacancy_rate",
+    "youth_population_share",
+    "senior_population_share",
+    "no_high_school_diploma_rate",
+    "bachelors_or_higher_rate",
+    "white_non_hispanic_share",
+    "black_non_hispanic_share",
+    "hispanic_or_latino_share",
+    "asian_non_hispanic_share",
+    "american_indian_alaska_native_non_hispanic_share",
+    "native_hawaiian_pacific_islander_non_hispanic_share",
+    "other_race_non_hispanic_share",
+    "two_or_more_races_non_hispanic_share",
+    "population_density"
+]);
+
+const CHOROPLETH_COLORS = [
+    "#eff6ff",
+    "#bfdbfe",
+    "#60a5fa",
+    "#2563eb",
+    "#1e3a8a"
+];
+
+const SELECTION_MODES = {
+    rectangle: "Rectangle",
+    lasso: "Lasso"
 };
 
 const TEMPORAL_VIEW_CONFIG = {
@@ -119,6 +204,45 @@ function formatPercent(value) {
     return `${Number(value || 0).toFixed(1)}%`;
 }
 
+function formatRate(value) {
+    return Number(value || 0).toFixed(1);
+}
+
+function formatLegendValue(value, metric = "") {
+    const number = Number(value || 0);
+    const format = CHOROPLETH_METRIC_FORMATS[metric] || "";
+
+    if (!Number.isFinite(number)) {
+        return "0";
+    }
+
+    if (format === "currency") {
+        return new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD",
+            maximumFractionDigits: 0
+        }).format(number);
+    }
+
+    if (format === "count") {
+        return formatNumber(Math.round(number));
+    }
+
+    if (format === "decimal") {
+        return number.toFixed(1);
+    }
+
+    if (format === "percent" || metric.includes("share")) {
+        return formatPercent(number);
+    }
+
+    return number >= 10 ? number.toFixed(0) : number.toFixed(1);
+}
+
+function formatChoroplethPopupValue(value, metric = "") {
+    return formatLegendValue(value, metric);
+}
+
 function setText(id, value) {
     const element = getElement(id);
 
@@ -127,9 +251,59 @@ function setText(id, value) {
     }
 }
 
+async function initializeChoroplethMetricSelect() {
+    const select = getElement("choroplethMetricSelect");
+
+    if (!select) {
+        return;
+    }
+
+    try {
+        const data = await fetchJson("/api/choropleth-metrics");
+
+        if (data.status !== "success") {
+            return;
+        }
+
+        const metrics = data.catalog?.arrests || [];
+
+        if (!metrics.length) {
+            return;
+        }
+
+        select.innerHTML = "";
+
+        metrics.forEach((metric) => {
+            if (!metric.key || !metric.label) {
+                return;
+            }
+
+            CHOROPLETH_METRIC_LABELS[metric.key] = metric.label;
+
+            if (metric.format) {
+                CHOROPLETH_METRIC_FORMATS[metric.key] = metric.format;
+            }
+
+            const option = document.createElement("option");
+            option.value = metric.key;
+            option.textContent = metric.label;
+            select.appendChild(option);
+        });
+
+        currentChoroplethMetric = data.default_metric || metrics[0].key || "total_arrests";
+        select.value = currentChoroplethMetric;
+    } catch (error) {
+        console.error("Choropleth metric catalog failed to load:", error);
+    }
+}
+
 function toggleFilter(filterName, value) {
     if (!activeFilters[filterName]) {
         return;
+    }
+
+    if (filterName === "tractGeoids") {
+        clearSpatialSelectionLayer();
     }
 
     if (activeFilters[filterName].has(value)) {
@@ -144,6 +318,7 @@ function clearFilters() {
     activeFilters.severities.clear();
     activeFilters.offenses.clear();
     activeFilters.tractGeoids.clear();
+    clearSpatialSelectionLayer();
 }
 
 function clearDateFilters() {
@@ -259,9 +434,25 @@ function updateFilterChips() {
         chips.push({ label: `Offense: ${value}`, type: "offenses", value });
     });
 
-    activeFilters.tractGeoids.forEach((value) => {
-        chips.push({ label: `Tract: ${value}`, type: "tractGeoids", value });
-    });
+    if (activeFilters.tractGeoids.size > 0) {
+        if (spatialSelectionSummary) {
+            chips.push({
+                label: spatialSelectionSummary,
+                type: "spatialSelection",
+                value: "spatialSelection"
+            });
+        } else if (activeFilters.tractGeoids.size > 6) {
+            chips.push({
+                label: `Tracts: ${formatNumber(activeFilters.tractGeoids.size)} selected`,
+                type: "tractGeoidsAll",
+                value: "tractGeoidsAll"
+            });
+        } else {
+            activeFilters.tractGeoids.forEach((value) => {
+                chips.push({ label: `Tract: ${value}`, type: "tractGeoids", value });
+            });
+        }
+    }
 
     if (dateFilters.startDate || dateFilters.endDate) {
         const dateLabel = `${dateFilters.startDate || "Start"} to ${dateFilters.endDate || "End"}`;
@@ -289,6 +480,9 @@ function updateFilterChips() {
 
             if (filterType === "dateRange") {
                 clearDateFilters();
+            } else if (filterType === "spatialSelection" || filterType === "tractGeoidsAll") {
+                activeFilters.tractGeoids.clear();
+                clearSpatialSelectionLayer();
             } else {
                 toggleFilter(filterType, filterValue);
             }
@@ -320,9 +514,15 @@ function getBarColors(labels, filterName) {
 function getSeverityColors(labels) {
     return labels.map((label) => {
         if (activeFilters.severities.size === 0) {
-            return label === "Felony"
-                ? "rgba(249, 115, 22, 0.88)"
-                : "rgba(56, 189, 248, 0.78)";
+            if (label === "Felony") {
+                return "rgba(249, 115, 22, 0.88)";
+            }
+
+            if (label === "Misdemeanor") {
+                return "rgba(56, 189, 248, 0.78)";
+            }
+
+            return "rgba(168, 85, 247, 0.78)";
         }
 
         return activeFilters.severities.has(label)
@@ -417,7 +617,15 @@ function sideDoughnutOptions(onClickHandler) {
 }
 
 async function updateSummary() {
-    const data = await fetchJson(`/api/summary${buildFilterQuery()}`);
+    const requestToken = summaryRequestToken + 1;
+    summaryRequestToken = requestToken;
+
+    const query = buildFilterQuery();
+    const data = await fetchJson(`/api/summary${query}`);
+
+    if (requestToken !== summaryRequestToken || query !== buildFilterQuery()) {
+        return;
+    }
 
     if (data.status !== "success") {
         console.error("Summary API error:", data);
@@ -427,7 +635,7 @@ async function updateSummary() {
     const summary = data.summary;
 
     setText("totalRecordsValue", formatNumber(summary.total_records));
-    setText("activeHotspotsValue", formatNumber(summary.active_hotspot_areas));
+    setText("arrestRateValue", formatRate(summary.arrest_rate_per_1000_population));
     setText("felonyShareValue", formatPercent(summary.felony_share));
 
     const trendValue = `${summary.recent_activity_trend_symbol} ${summary.recent_activity_trend_label}`;
@@ -477,7 +685,8 @@ function buildPopup(point) {
 
 async function addGeoJsonLayer(map, endpoint, options, addToMap = true) {
     try {
-        const geojson = await fetchJson(endpoint);
+        const payload = await fetchJson(endpoint);
+        const geojson = payload.geojson || payload;
         const layer = L.geoJSON(geojson, options);
 
         if (addToMap) {
@@ -528,6 +737,16 @@ function stylePoliceBeats() {
     };
 }
 
+function styleNeighborhoods() {
+    return {
+        color: "#f8fafc",
+        weight: 0.75,
+        opacity: 0.28,
+        fillColor: "#38bdf8",
+        fillOpacity: 0.045
+    };
+}
+
 function onEachCityBoundary(feature, layer) {
     layer.bindPopup(`
         <strong>Durham City Boundary</strong><br>
@@ -568,6 +787,50 @@ function onEachPoliceBeat(feature, layer) {
         <strong>Beat:</strong> ${beat}<br>
         <strong>CAD:</strong> ${cad}
     `);
+}
+
+function onEachNeighborhood(feature, layer) {
+    const properties = feature.properties || {};
+    const name = properties.neighborhood_name || properties.name || "Neighborhood";
+    const labelTier = Number(properties.label_tier || 3);
+
+    layer.bindPopup(`
+        <strong>${name}</strong><br>
+        Neighborhood context layer<br>
+        <strong>Label tier:</strong> ${labelTier}
+    `);
+
+    layer.bindTooltip(name, {
+        permanent: false,
+        direction: "center",
+        className: `neighborhood-label neighborhood-label-tier-${labelTier}`,
+        opacity: 0.86
+    });
+
+    layer._neighborhoodLabelTier = labelTier;
+
+    layer.on("mouseover", () => {
+        layer.setStyle({
+            opacity: 0.64,
+            fillOpacity: 0.09
+        });
+        layer.openTooltip();
+    });
+
+    layer.on("mouseout", () => {
+        layer.setStyle(styleNeighborhoods());
+        layer.closeTooltip();
+    });
+}
+
+function updateNeighborhoodLabelVisibility() {
+    if (!dashboardMap || !neighborhoodsLayer || !dashboardMap.hasLayer(neighborhoodsLayer)) {
+        return;
+    }
+
+    neighborhoodsLayer.eachLayer((layer) => {
+        layer.closeTooltip();
+    });
 }
 
 async function initializeMap() {
@@ -612,6 +875,7 @@ async function initializeMap() {
         dashboardMap,
         "/static/geojson/durham_city_intersecting_tracts.geojson",
         {
+            interactive: false,
             style: styleIntersectingTracts,
             onEachFeature: onEachIntersectingTract
         },
@@ -622,6 +886,7 @@ async function initializeMap() {
         dashboardMap,
         "/static/geojson/durham_city_boundary.geojson",
         {
+            interactive: false,
             style: styleCityBoundary,
             onEachFeature: onEachCityBoundary
         },
@@ -632,6 +897,7 @@ async function initializeMap() {
         dashboardMap,
         "/static/geojson/durham_county_boundary.geojson",
         {
+            interactive: false,
             style: styleCountyBoundary,
             onEachFeature: onEachCountyBoundary
         },
@@ -642,8 +908,19 @@ async function initializeMap() {
         dashboardMap,
         "/static/geojson/police_beats.geojson",
         {
+            interactive: false,
             style: stylePoliceBeats,
             onEachFeature: onEachPoliceBeat
+        },
+        false
+    );
+
+    neighborhoodsLayer = await addGeoJsonLayer(
+        dashboardMap,
+        "/api/neighborhoods",
+        {
+            style: styleNeighborhoods,
+            onEachFeature: onEachNeighborhood
         },
         false
     );
@@ -651,6 +928,9 @@ async function initializeMap() {
     if (cityBoundaryLayer) {
         cityBoundaryLayer.bringToFront();
     }
+
+    initializeMapLegend();
+    initializeSelectionTools();
 
     const baseMaps = {
         "Dark": darkMap,
@@ -676,9 +956,31 @@ async function initializeMap() {
         overlays["Police Beats"] = policeBeatsLayer;
     }
 
+    if (neighborhoodsLayer) {
+        overlays["Neighborhood Context"] = neighborhoodsLayer;
+    }
+
     L.control.layers(baseMaps, overlays, {
         collapsed: true
     }).addTo(dashboardMap);
+
+    dashboardMap.on("overlayadd", (event) => {
+        if (event.layer === neighborhoodsLayer) {
+            updateNeighborhoodLabelVisibility();
+        }
+
+        if (cityBoundaryLayer) {
+            cityBoundaryLayer.bringToFront();
+        }
+    });
+
+    dashboardMap.on("overlayremove", (event) => {
+        if (event.layer === neighborhoodsLayer) {
+            neighborhoodsLayer.eachLayer((layer) => layer.closeTooltip());
+        }
+    });
+
+    dashboardMap.on("zoomend", updateNeighborhoodLabelVisibility);
 
     if (cityBoundaryLayer && typeof cityBoundaryLayer.getBounds === "function") {
         const cityBounds = cityBoundaryLayer.getBounds();
@@ -698,17 +1000,472 @@ function removeActiveDataLayer() {
         dashboardMap.removeLayer(activeDataLayer);
     }
 
+    if (pointOverlayLayer && dashboardMap) {
+        dashboardMap.removeLayer(pointOverlayLayer);
+    }
+
+    if (selectedTractHighlightLayer && dashboardMap) {
+        dashboardMap.removeLayer(selectedTractHighlightLayer);
+    }
+
+    if (selectedNeighborhoodHighlightLayer && dashboardMap) {
+        dashboardMap.removeLayer(selectedNeighborhoodHighlightLayer);
+    }
+
     activeDataLayer = null;
+    pointOverlayLayer = null;
+    selectedTractHighlightLayer = null;
+    selectedNeighborhoodHighlightLayer = null;
     lastPointLayer = null;
+}
+
+function initializeMapLegend() {
+    if (!dashboardMap || mapLegendControl) {
+        return;
+    }
+
+    mapLegendControl = L.control({
+        position: "bottomleft"
+    });
+
+    mapLegendControl.onAdd = () => {
+        mapLegendElement = L.DomUtil.create("div", "modern-map-legend is-hidden");
+        L.DomEvent.disableClickPropagation(mapLegendElement);
+        L.DomEvent.disableScrollPropagation(mapLegendElement);
+        mapLegendElement.setAttribute("aria-live", "polite");
+        return mapLegendElement;
+    };
+
+    mapLegendControl.addTo(dashboardMap);
+}
+
+function initializeSelectionTools() {
+    if (!dashboardMap) {
+        return;
+    }
+
+    const selectionControl = L.control({
+        position: "topleft"
+    });
+
+    selectionControl.onAdd = () => {
+        const container = L.DomUtil.create("div", "selection-control leaflet-bar");
+        selectionControlElement = container;
+        container.innerHTML = `
+            <button type="button" data-selection-mode="rectangle" title="Rectangle selection">□</button>
+            <button type="button" data-selection-mode="lasso" title="Lasso selection">⌁</button>
+        `;
+
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+
+        container.querySelectorAll("button").forEach((button) => {
+            button.addEventListener("click", () => {
+                const requestedMode = button.dataset.selectionMode;
+                selectionMode = selectionMode === requestedMode ? null : requestedMode;
+                updateSelectionToolButtons(container);
+            });
+        });
+
+        return container;
+    };
+
+    selectionControl.addTo(dashboardMap);
+
+    dashboardMap.on("mousedown", startSpatialSelection);
+    dashboardMap.on("mousemove", updateSpatialSelection);
+    dashboardMap.on("mouseup", finishSpatialSelection);
+    dashboardMap.on("click", clearSpatialSelectionFromMapClick);
+    dashboardMap.getContainer().addEventListener("click", clearSpatialSelectionFromMapContainerClick, true);
+}
+
+function updateSelectionControlVisibility() {
+    if (!selectionControlElement) {
+        return;
+    }
+
+    selectionControlElement.classList.toggle("is-hidden", Boolean(spatialSelectionSummary));
+}
+
+function updateSelectionToolButtons(container = document.querySelector(".selection-control")) {
+    if (!container) {
+        return;
+    }
+
+    container.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.selectionMode === selectionMode);
+    });
+
+    if (dashboardMap) {
+        dashboardMap.getContainer().classList.toggle("selection-active", Boolean(selectionMode));
+    }
+
+    updateSelectionControlVisibility();
+}
+
+function getSelectionStyle() {
+    return {
+        color: "#facc15",
+        weight: 1.4,
+        opacity: 0.92,
+        fillColor: "#facc15",
+        fillOpacity: 0.1,
+        dashArray: "4 4"
+    };
+}
+
+function attachSelectionClearHandler() {
+    if (!selectionLayer) {
+        return;
+    }
+
+    selectionLayer.off("click");
+    selectionLayer.on("click", async (event) => {
+        L.DomEvent.stop(event);
+        await clearSpatialSelection();
+    });
+}
+
+function removeDrawnSelectionLayer() {
+    if (selectionLayer && dashboardMap) {
+        dashboardMap.removeLayer(selectionLayer);
+    }
+
+    selectionLayer = null;
+    selectionStartLatLng = null;
+    selectionLatLngs = [];
+}
+
+function startSpatialSelection(event) {
+    if (!selectionMode) {
+        return;
+    }
+
+    isDrawingSelection = true;
+    suppressNextMapClear = true;
+    selectionStartLatLng = event.latlng;
+    selectionLatLngs = [event.latlng];
+
+    if (selectionLayer) {
+        dashboardMap.removeLayer(selectionLayer);
+        selectionLayer = null;
+    }
+
+    dashboardMap.dragging.disable();
+
+    if (selectionMode === "rectangle") {
+        selectionLayer = L.rectangle(
+            L.latLngBounds(selectionStartLatLng, selectionStartLatLng),
+            getSelectionStyle()
+        ).addTo(dashboardMap);
+    } else if (selectionMode === "lasso") {
+        selectionLayer = L.polygon(selectionLatLngs, getSelectionStyle()).addTo(dashboardMap);
+    }
+}
+
+function updateSpatialSelection(event) {
+    if (!isDrawingSelection || !selectionLayer || !selectionStartLatLng) {
+        return;
+    }
+
+    if (selectionMode === "rectangle") {
+        selectionLayer.setBounds(L.latLngBounds(selectionStartLatLng, event.latlng));
+    } else if (selectionMode === "lasso") {
+        selectionLatLngs.push(event.latlng);
+        selectionLayer.setLatLngs(selectionLatLngs);
+    }
+}
+
+async function finishSpatialSelection(event) {
+    if (!isDrawingSelection || !selectionLayer) {
+        return;
+    }
+
+    isDrawingSelection = false;
+    dashboardMap.dragging.enable();
+
+    if (selectionMode === "lasso") {
+        selectionLatLngs.push(event.latlng);
+        selectionLayer.setLatLngs(selectionLatLngs);
+    }
+
+    attachSelectionClearHandler();
+
+    const coordinates = getSelectionCoordinates();
+
+    if (coordinates.length < 3) {
+        clearSpatialSelection();
+        return;
+    }
+
+    selectionMode = null;
+    updateSelectionToolButtons();
+
+    await applySpatialSelection(coordinates);
+
+    setTimeout(() => {
+        suppressNextMapClear = false;
+    }, 250);
+}
+
+function getSelectionCoordinates() {
+    if (!selectionLayer) {
+        return [];
+    }
+
+    let latLngs = [];
+
+    if (selectionLayer instanceof L.Rectangle) {
+        const bounds = selectionLayer.getBounds();
+        const north = bounds.getNorth();
+        const south = bounds.getSouth();
+        const east = bounds.getEast();
+        const west = bounds.getWest();
+
+        latLngs = [
+            L.latLng(south, west),
+            L.latLng(south, east),
+            L.latLng(north, east),
+            L.latLng(north, west)
+        ];
+    } else {
+        latLngs = selectionLayer.getLatLngs()[0] || [];
+    }
+
+    return latLngs.map((latLng) => [latLng.lng, latLng.lat]);
+}
+
+function getActiveSelectionLayer() {
+    if (currentMapMode === "choropleth") {
+        return "tracts";
+    }
+
+    if (currentMapMode === "points" || currentMapMode === "cluster") {
+        return "points";
+    }
+
+    return null;
+}
+
+function isPointInsideSelection(lon, lat) {
+    if (
+        activeSelectionLayer !== "points"
+        || !activeSelectionCoordinates
+        || activeSelectionCoordinates.length < 3
+    ) {
+        return false;
+    }
+
+    let inside = false;
+
+    for (
+        let currentIndex = 0, previousIndex = activeSelectionCoordinates.length - 1;
+        currentIndex < activeSelectionCoordinates.length;
+        previousIndex = currentIndex, currentIndex += 1
+    ) {
+        const currentPoint = activeSelectionCoordinates[currentIndex];
+        const previousPoint = activeSelectionCoordinates[previousIndex];
+        const currentLon = Number(currentPoint[0]);
+        const currentLat = Number(currentPoint[1]);
+        const previousLon = Number(previousPoint[0]);
+        const previousLat = Number(previousPoint[1]);
+
+        const intersects = ((currentLat > lat) !== (previousLat > lat))
+            && (lon < ((previousLon - currentLon) * (lat - currentLat)) / (previousLat - currentLat) + currentLon);
+
+        if (intersects) {
+            inside = !inside;
+        }
+    }
+
+    return inside;
+}
+
+async function applySpatialSelection(coordinates) {
+    const targetLayer = getActiveSelectionLayer();
+
+    const response = await fetch("/api/spatial-selection", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            coordinates,
+            target_layer: targetLayer
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error("Spatial selection request failed.");
+    }
+
+    const data = await response.json();
+
+    if (data.status !== "success") {
+        console.error("Spatial selection API error:", data);
+        return;
+    }
+
+    activeFilters.tractGeoids.clear();
+    (data.tract_geoids || []).forEach((geoid) => activeFilters.tractGeoids.add(String(geoid)));
+
+    activeSelectionCoordinates = coordinates;
+    activeSelectionLayer = data.target_layer || targetLayer;
+    selectedNeighborhoodNames = activeSelectionLayer === "neighborhoods"
+        ? new Set((data.neighborhood_names || []).map((name) => String(name)))
+        : new Set();
+    spatialSelectionSummary = activeSelectionLayer === "points"
+        ? `Spatial selection: ${formatNumber(data.arrest_point_count || 0)} points`
+        : `Spatial selection: ${formatNumber(data.tract_count || 0)} tracts`;
+    updateFilterChips();
+    updateSelectionControlVisibility();
+
+    await refreshDashboardPanels();
+    await updateMap();
+
+    removeDrawnSelectionLayer();
+
+    setMapStatus(
+        activeSelectionLayer === "points" ? data.arrest_point_count || 0 : data.tract_count || 0,
+        activeSelectionLayer === "points"
+            ? `selected points | ${formatNumber(data.tract_count || 0)} related tracts`
+            : `selected tracts | ${formatNumber(data.arrest_point_count || 0)} arrests | ${formatNumber(data.shooting_point_count || 0)} shootings`
+    );
+}
+
+function clearSpatialSelectionLayer() {
+    removeDrawnSelectionLayer();
+
+    activeSelectionCoordinates = [];
+    activeSelectionLayer = null;
+    selectedNeighborhoodNames.clear();
+    spatialSelectionSummary = null;
+    updateSelectionControlVisibility();
+}
+
+async function clearSpatialSelection() {
+    clearSpatialSelectionLayer();
+    activeFilters.tractGeoids.clear();
+    updateFilterChips();
+    await refreshDashboard();
+}
+
+async function clearSpatialSelectionFromMapClick(event) {
+    if (suppressNextMapClear || isDrawingSelection || selectionMode || !spatialSelectionSummary) {
+        return;
+    }
+
+    const target = event.originalEvent?.target;
+
+    if (target?.closest?.(".leaflet-control, .leaflet-popup")) {
+        return;
+    }
+
+    await clearSpatialSelection();
+}
+
+async function clearSpatialSelectionFromMapContainerClick(event) {
+    if (suppressNextMapClear || isDrawingSelection || selectionMode || !spatialSelectionSummary) {
+        return;
+    }
+
+    const target = event.target;
+
+    if (target?.closest?.(".leaflet-control, .leaflet-popup, .modern-map-legend")) {
+        return;
+    }
+
+    event.stopPropagation();
+    await clearSpatialSelection();
+}
+
+function setMapLegendContent(content) {
+    if (!mapLegendElement) {
+        return;
+    }
+
+    if (!content) {
+        mapLegendElement.classList.add("is-hidden");
+        mapLegendElement.innerHTML = "";
+        return;
+    }
+
+    mapLegendElement.innerHTML = content;
+    mapLegendElement.classList.remove("is-hidden");
+}
+
+function renderPointClusterLegend(mode, count) {
+    if (!pointsVisible || count <= 0) {
+        setMapLegendContent("");
+        return;
+    }
+
+    const title = mode === "cluster" ? "Clustered events" : "Point events";
+    const detail = mode === "cluster"
+        ? "Clusters expand as users zoom"
+        : `${formatNumber(count)} sampled arrest events`;
+
+    setMapLegendContent(`
+        <div class="legend-title">${title}</div>
+        <div class="legend-items">
+            <span class="legend-item">
+                <span class="legend-symbol point-symbol"></span>
+                Arrest event
+            </span>
+            <span class="legend-item">
+                <span class="legend-symbol boundary-symbol"></span>
+                Durham boundary
+            </span>
+            <span class="legend-note">${detail}</span>
+        </div>
+    `);
+}
+
+function renderChoroplethLegend(breaks, metric, values) {
+    const cleanValues = values
+        .map((value) => Number(value || 0))
+        .filter((value) => Number.isFinite(value) && value > 0);
+
+    if (!cleanValues.length) {
+        setMapLegendContent("");
+        return;
+    }
+
+    const metricLabel = CHOROPLETH_METRIC_LABELS[metric] || "Selected metric";
+    const minValue = Math.min(...cleanValues);
+    const maxValue = Math.max(...cleanValues, Number(breaks[breaks.length - 1] || 0));
+    const sequentialRamp = `linear-gradient(90deg, ${CHOROPLETH_COLORS.join(", ")})`;
+    const tickMarks = breaks.map((breakValue) => {
+        const position = maxValue === minValue
+            ? 100
+            : ((Number(breakValue || 0) - minValue) / (maxValue - minValue)) * 100;
+        const boundedPosition = Math.max(0, Math.min(100, position));
+
+        return `<span title="${formatLegendValue(breakValue, metric)}" style="left: ${boundedPosition}%"></span>`;
+    }).join("");
+
+    setMapLegendContent(`
+        <div class="choropleth-legend">
+            <div class="choropleth-legend-values">
+                <span>${formatLegendValue(minValue, metric)}</span>
+                <span>${formatLegendValue(maxValue, metric)}</span>
+            </div>
+            <div class="choropleth-legend-scale-wrap">
+                <span class="legend-scale choropleth-scale" style="background: ${sequentialRamp}" aria-hidden="true"></span>
+                <span class="legend-ticks" aria-hidden="true">
+                    <span style="left: 0%"></span>
+                    ${tickMarks}
+                </span>
+            </div>
+            <div class="choropleth-legend-title">${metricLabel}</div>
+            <div class="choropleth-legend-method">Natural breaks (Jenks) • sequential scale</div>
+        </div>
+    `);
 }
 
 function buildMapModeLabel(mode) {
     if (mode === "cluster") {
         return "cluster mode";
-    }
-
-    if (mode === "hex") {
-        return "hex density mode";
     }
 
     if (mode === "choropleth") {
@@ -735,15 +1492,18 @@ async function updateMap() {
         await renderPointLayer();
     } else if (currentMapMode === "cluster") {
         await renderClusterLayer();
-    } else if (currentMapMode === "hex") {
-        await renderHexLayer();
     } else if (currentMapMode === "choropleth") {
         await renderChoroplethLayer();
     }
 
+    await renderSelectedTractHighlightLayer();
+    await renderSelectedNeighborhoodHighlightLayer();
+
     if (cityBoundaryLayer) {
         cityBoundaryLayer.bringToFront();
     }
+
+    updateSelectionControlVisibility();
 }
 
 async function fetchMapPoints() {
@@ -767,21 +1527,44 @@ function createPointMarker(point) {
         return null;
     }
 
+    const isSelected = isPointInsideSelection(lon, lat);
     const marker = L.circleMarker([lat, lon], {
-        radius: 4,
-        color: "#38bdf8",
-        weight: 1,
-        fillColor: "#38bdf8",
-        fillOpacity: 0.74
+        radius: isSelected ? 6.5 : 4,
+        color: isSelected ? "#f8fafc" : "#38bdf8",
+        weight: isSelected ? 2 : 1,
+        opacity: isSelected ? 0.96 : 0.82,
+        fillColor: isSelected ? "#facc15" : "#38bdf8",
+        fillOpacity: isSelected ? 0.92 : 0.74,
+        selectedPoint: isSelected
     });
 
     marker.bindPopup(buildPopup(point));
 
+    if (isSelected) {
+        marker.on("click", async (event) => {
+            L.DomEvent.stop(event);
+            await clearSpatialSelection();
+        });
+    }
+
     return marker;
 }
 
-async function renderPointLayer() {
-    const points = await fetchMapPoints();
+function createClusterIcon(cluster) {
+    const markers = cluster.getAllChildMarkers();
+    const selectedCount = markers.filter((marker) => marker.options?.selectedPoint).length;
+    const childCount = cluster.getChildCount();
+    const sizeClass = childCount >= 100 ? "large" : childCount >= 20 ? "medium" : "small";
+    const selectedClass = selectedCount > 0 ? " selected-cluster" : "";
+
+    return L.divIcon({
+        html: `<div><span>${childCount}</span></div>`,
+        className: `marker-cluster marker-cluster-${sizeClass}${selectedClass}`,
+        iconSize: L.point(40, 40)
+    });
+}
+
+function buildPointFeatureLayer(points) {
     const pointLayer = L.featureGroup();
 
     points.forEach((point) => {
@@ -792,30 +1575,21 @@ async function renderPointLayer() {
         }
     });
 
-    activeDataLayer = pointLayer;
-    lastPointLayer = pointLayer;
-
-    if (pointsVisible) {
-        activeDataLayer.addTo(dashboardMap);
-    }
-
-    setMapStatus(points.length, pointsVisible ? "points" : "points hidden");
-    fitLayerIfPossible(pointLayer);
+    return pointLayer;
 }
 
-async function renderClusterLayer() {
-    const points = await fetchMapPoints();
-
+function buildClusterFeatureLayer(points) {
     if (typeof L.markerClusterGroup === "undefined") {
         console.error("Leaflet marker cluster plugin is not loaded.");
-        return;
+        return L.featureGroup();
     }
 
     const clusterLayer = L.markerClusterGroup({
         showCoverageOnHover: false,
         spiderfyOnMaxZoom: true,
         disableClusteringAtZoom: 16,
-        maxClusterRadius: 48
+        maxClusterRadius: 48,
+        iconCreateFunction: createClusterIcon
     });
 
     points.forEach((point) => {
@@ -826,10 +1600,51 @@ async function renderClusterLayer() {
             return;
         }
 
-        const marker = L.marker([lat, lon]);
+        const isSelected = isPointInsideSelection(lon, lat);
+        const marker = L.circleMarker([lat, lon], {
+            radius: isSelected ? 6.5 : 4,
+            color: isSelected ? "#f8fafc" : "#38bdf8",
+            weight: isSelected ? 2 : 1,
+            opacity: isSelected ? 0.96 : 0.82,
+            fillColor: isSelected ? "#facc15" : "#38bdf8",
+            fillOpacity: isSelected ? 0.92 : 0.74,
+            selectedPoint: isSelected
+        });
+
         marker.bindPopup(buildPopup(point));
+
+        if (isSelected) {
+            marker.on("click", async (event) => {
+                L.DomEvent.stop(event);
+                await clearSpatialSelection();
+            });
+        }
+
         clusterLayer.addLayer(marker);
     });
+
+    return clusterLayer;
+}
+
+async function renderPointLayer() {
+    const points = await fetchMapPoints();
+    const pointLayer = buildPointFeatureLayer(points);
+
+    activeDataLayer = pointLayer;
+    lastPointLayer = pointLayer;
+
+    if (pointsVisible) {
+        activeDataLayer.addTo(dashboardMap);
+    }
+
+    setMapStatus(points.length, pointsVisible ? "points" : "points hidden");
+    renderPointClusterLegend("points", points.length);
+    fitLayerIfPossible(pointLayer);
+}
+
+async function renderClusterLayer() {
+    const points = await fetchMapPoints();
+    const clusterLayer = buildClusterFeatureLayer(points);
 
     activeDataLayer = clusterLayer;
 
@@ -838,86 +1653,45 @@ async function renderClusterLayer() {
     }
 
     setMapStatus(points.length, pointsVisible ? "clustered points" : "clusters hidden");
+    renderPointClusterLegend("cluster", points.length);
     fitLayerIfPossible(clusterLayer);
-}
-
-async function fetchAggregation(mode) {
-    const query = buildFilterQuery();
-    const separator = query ? `${query}&` : "?";
-    const data = await fetchJson(`/api/map-aggregation${separator}mode=${mode}&limit=8000`);
-
-    if (data.status !== "success") {
-        console.error("Aggregation API error:", data);
-        return [];
-    }
-
-    return data.cells;
-}
-
-function createHexagon(lat, lon, radius) {
-    const points = [];
-
-    for (let i = 0; i < 6; i += 1) {
-        const angle = Math.PI / 3 * i;
-        const pointLat = lat + radius * Math.sin(angle);
-        const pointLon = lon + radius * Math.cos(angle);
-        points.push([pointLat, pointLon]);
-    }
-
-    return points;
-}
-
-async function renderHexLayer() {
-    const cells = await fetchAggregation("hex");
-    const layer = L.featureGroup();
-
-    cells.forEach((cell) => {
-        const lat = Number(cell.latitude);
-        const lon = Number(cell.longitude);
-        const intensity = Number(cell.intensity || 0);
-
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-            return;
-        }
-
-        const radius = 0.0055 + intensity * 0.0065;
-
-        const hexagon = L.polygon(createHexagon(lat, lon, radius), {
-            color: "#f97316",
-            weight: 1.2,
-            fillColor: "#f97316",
-            fillOpacity: Math.max(0.16, intensity * 0.82)
-        });
-
-        hexagon.bindPopup(`
-            <strong>Hex Cell</strong><br>
-            <strong>Records:</strong> ${cell.count}<br>
-            <strong>Relative intensity:</strong> ${(intensity * 100).toFixed(1)}%
-        `);
-
-        hexagon.addTo(layer);
-    });
-
-    activeDataLayer = layer;
-    activeDataLayer.addTo(dashboardMap);
-
-    setMapStatus(cells.length, "hex cells");
-    fitLayerIfPossible(layer);
 }
 
 function getChoroplethMetricValue(properties) {
     return Number(properties.selected_metric_value || 0);
 }
 
+function isEventActivityMetric(metric) {
+    return [
+        "total_arrests",
+        "arrests_per_1000_population",
+        "felony_arrests_per_1000_population",
+        "felony_share",
+        "activity_density",
+        "arrests_density_per_sq_mi",
+        "arrest_activity_share",
+        "weekend_activity_share",
+        "evening_night_activity_share",
+        "night_share"
+    ].includes(metric);
+}
+
 function getChoroplethBreaks(values) {
     const cleanValues = values
         .map((value) => Number(value || 0))
-        .filter((value) => Number.isFinite(value));
+        .filter((value) => Number.isFinite(value) && value > 0)
+        .sort((a, b) => a - b);
 
     const maxValue = Math.max(...cleanValues, 0);
 
     if (maxValue <= 0) {
         return [0, 1, 2, 3, 4];
+    }
+
+    const uniqueValues = [...new Set(cleanValues)];
+
+    if (uniqueValues.length >= 5) {
+        return getJenksUpperBreaks(cleanValues, 5);
     }
 
     return [
@@ -929,41 +1703,122 @@ function getChoroplethBreaks(values) {
     ];
 }
 
+function getJenksUpperBreaks(sortedValues, classCount) {
+    const values = sortedValues
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => a - b);
+
+    const dataCount = values.length;
+    const classes = Math.min(classCount, dataCount);
+
+    if (classes <= 1) {
+        return [values[dataCount - 1] || 0];
+    }
+
+    const lowerClassLimits = Array.from(
+        { length: dataCount + 1 },
+        () => Array(classes + 1).fill(0)
+    );
+    const varianceCombinations = Array.from(
+        { length: dataCount + 1 },
+        () => Array(classes + 1).fill(Infinity)
+    );
+
+    for (let classIndex = 1; classIndex <= classes; classIndex += 1) {
+        lowerClassLimits[1][classIndex] = 1;
+        varianceCombinations[1][classIndex] = 0;
+    }
+
+    for (let valueIndex = 2; valueIndex <= dataCount; valueIndex += 1) {
+        let sum = 0;
+        let sumSquares = 0;
+        let weight = 0;
+
+        for (let lowerIndex = 1; lowerIndex <= valueIndex; lowerIndex += 1) {
+            const offsetIndex = valueIndex - lowerIndex + 1;
+            const value = values[offsetIndex - 1];
+
+            sum += value;
+            sumSquares += value * value;
+            weight += 1;
+
+            const variance = sumSquares - (sum * sum) / weight;
+            const previousIndex = offsetIndex - 1;
+
+            if (previousIndex !== 0) {
+                for (let classIndex = 2; classIndex <= classes; classIndex += 1) {
+                    const candidateVariance = variance + varianceCombinations[previousIndex][classIndex - 1];
+
+                    if (varianceCombinations[valueIndex][classIndex] >= candidateVariance) {
+                        lowerClassLimits[valueIndex][classIndex] = offsetIndex;
+                        varianceCombinations[valueIndex][classIndex] = candidateVariance;
+                    }
+                }
+            }
+        }
+
+        lowerClassLimits[valueIndex][1] = 1;
+        varianceCombinations[valueIndex][1] = sumSquares - (sum * sum) / weight;
+    }
+
+    const boundaries = Array(classes + 1).fill(0);
+    boundaries[classes] = values[dataCount - 1];
+    boundaries[0] = values[0];
+
+    let valueIndex = dataCount;
+
+    for (let classIndex = classes; classIndex > 1; classIndex -= 1) {
+        const lowerLimit = lowerClassLimits[valueIndex][classIndex];
+        boundaries[classIndex - 1] = values[Math.max(0, lowerLimit - 2)];
+        valueIndex = lowerLimit - 1;
+    }
+
+    return boundaries.slice(1);
+}
+
 function getChoroplethColor(value, breaks) {
     if (!value || value <= 0) {
         return "rgba(15, 23, 42, 0.18)";
     }
 
     if (value <= breaks[0]) {
-        return "#dbeafe";
+        return CHOROPLETH_COLORS[0];
     }
 
     if (value <= breaks[1]) {
-        return "#93c5fd";
+        return CHOROPLETH_COLORS[1];
     }
 
     if (value <= breaks[2]) {
-        return "#60a5fa";
+        return CHOROPLETH_COLORS[2];
     }
 
     if (value <= breaks[3]) {
-        return "#3b82f6";
+        return CHOROPLETH_COLORS[3];
     }
 
-    return "#1d4ed8";
+    return CHOROPLETH_COLORS[4];
 }
 
 function buildChoroplethPopup(properties) {
-    const metricLabel = CHOROPLETH_METRIC_LABELS[properties.selected_metric] || "Selected metric";
-    const metricValue = Number(properties.selected_metric_value || 0);
+    const primaryNeighborhood = properties.primary_neighborhood || "Not assigned";
+    const secondaryNeighborhoods = properties.secondary_neighborhoods || "";
+    const secondaryLine = secondaryNeighborhoods
+        ? `<strong>Secondary neighborhoods:</strong> ${secondaryNeighborhoods}<br>`
+        : "";
+    const selectedMetric = properties.selected_metric || currentChoroplethMetric;
+    const selectedMetricLabel = CHOROPLETH_METRIC_LABELS[selectedMetric] || "Selected metric";
+    const selectedMetricValue = Number(properties.selected_metric_value || 0);
+    const selectedMetricLine = CENSUS_CONTEXT_METRICS.has(selectedMetric)
+        ? `<strong>${selectedMetricLabel}:</strong> ${formatChoroplethPopupValue(selectedMetricValue, selectedMetric)}<br>`
+        : "";
 
     return `
         <strong>${properties.name || "Census tract"}</strong><br>
         <strong>GEOID:</strong> ${properties.geoid || "Not available"}<br>
-        <strong>${metricLabel}:</strong> ${metricValue.toFixed(properties.selected_metric === "total_arrests" ? 0 : 1)}<br>
-        <strong>Total arrests:</strong> ${formatNumber(properties.total_arrests)}<br>
-        <strong>Felony share:</strong> ${formatPercent(properties.felony_share)}<br>
-        <strong>Density:</strong> ${Number(properties.activity_density || 0).toFixed(2)} per sq mi<br>
+        <strong>Primary neighborhood:</strong> ${primaryNeighborhood}<br>
+        ${secondaryLine}
+        ${selectedMetricLine}
         <em>Full tract geometry preserved. Tract intersects Durham municipal boundary.</em>
     `;
 }
@@ -973,15 +1828,119 @@ function getChoroplethStyle(feature, breaks) {
     const value = getChoroplethMetricValue(properties);
     const geoid = String(properties.geoid || "");
 
-    const isSelected = activeFilters.tractGeoids.has(geoid);
+    const isSelected = activeSelectionLayer === "tracts" && activeFilters.tractGeoids.has(geoid);
 
     return {
-        color: isSelected ? "#facc15" : "rgba(226, 232, 240, 0.58)",
-        weight: isSelected ? 2.4 : 0.75,
-        opacity: isSelected ? 0.95 : 0.6,
+        color: isSelected ? "#f59e0b" : "rgba(226, 232, 240, 0.58)",
+        weight: isSelected ? 2.1 : 0.75,
+        opacity: isSelected ? 0.98 : 0.6,
         fillColor: getChoroplethColor(value, breaks),
-        fillOpacity: value > 0 ? 0.58 : 0.18
+        fillOpacity: isSelected ? 0.68 : value > 0 ? 0.58 : 0.18
     };
+}
+
+function getSelectedTractHighlightStyle() {
+    return {
+        color: "#f59e0b",
+        weight: 1.9,
+        opacity: 0.96,
+        fillColor: "#facc15",
+        fillOpacity: 0.08,
+        interactive: false
+    };
+}
+
+async function renderSelectedTractHighlightLayer() {
+    if (
+        !spatialSelectionSummary
+        || activeSelectionLayer !== "tracts"
+        || currentMapMode === "choropleth"
+        || activeFilters.tractGeoids.size === 0
+    ) {
+        return;
+    }
+
+    const data = await fetchJson(`/api/choropleth?metric=${currentChoroplethMetric}`);
+    const geojson = data.geojson || { type: "FeatureCollection", features: [] };
+    const selectedGeoids = activeFilters.tractGeoids;
+    const selectedFeatures = geojson.features.filter((feature) => {
+        const properties = feature.properties || {};
+        const geoid = String(properties.geoid || properties.tract_geoid || "");
+
+        return selectedGeoids.has(geoid);
+    });
+
+    if (!selectedFeatures.length) {
+        return;
+    }
+
+    selectedTractHighlightLayer = L.geoJSON(
+        {
+            type: "FeatureCollection",
+            features: selectedFeatures
+        },
+        {
+            style: getSelectedTractHighlightStyle,
+            interactive: false
+        }
+    );
+
+    selectedTractHighlightLayer.addTo(dashboardMap);
+    selectedTractHighlightLayer.bringToFront();
+}
+
+function getSelectedNeighborhoodHighlightStyle() {
+    return {
+        color: "#22d3ee",
+        weight: 1.45,
+        opacity: 0.88,
+        fillColor: "#22d3ee",
+        fillOpacity: 0.07,
+        dashArray: "5 5",
+        interactive: false
+    };
+}
+
+async function renderSelectedNeighborhoodHighlightLayer() {
+    if (
+        !spatialSelectionSummary
+        || activeSelectionLayer !== "neighborhoods"
+        || selectedNeighborhoodNames.size === 0
+    ) {
+        return;
+    }
+
+    const data = await fetchJson("/api/neighborhoods");
+    const geojson = data.geojson || { type: "FeatureCollection", features: [] };
+    const selectedFeatures = geojson.features.filter((feature) => {
+        const properties = feature.properties || {};
+        const name = String(
+            properties.neighborhood_name
+            || properties.name
+            || properties.Name
+            || ""
+        );
+
+        return selectedNeighborhoodNames.has(name);
+    });
+
+    if (!selectedFeatures.length) {
+        return;
+    }
+
+    selectedNeighborhoodHighlightLayer = L.geoJSON(
+        {
+            type: "FeatureCollection",
+            features: selectedFeatures
+        },
+        {
+            style: getSelectedNeighborhoodHighlightStyle,
+            interactive: false
+        }
+    );
+
+    selectedNeighborhoodHighlightLayer.addTo(dashboardMap);
+    selectedNeighborhoodHighlightLayer.bringToFront();
 }
 
 async function renderChoroplethLayer() {
@@ -1039,13 +1998,21 @@ async function renderChoroplethLayer() {
             });
 
             layer.on("click", async () => {
+                if (selectionLayer || spatialSelectionSummary) {
+                    await clearSpatialSelection();
+                    return;
+                }
+
                 if (!geoid) {
                     return;
                 }
 
+                suppressTractPopupClose = true;
                 dashboardMap.closePopup();
                 layer.openPopup();
 
+                clearSpatialSelectionLayer();
+                activeSelectionLayer = "tracts";
                 activeFilters.tractGeoids.clear();
                 activeFilters.tractGeoids.add(geoid);
 
@@ -1058,14 +2025,26 @@ async function renderChoroplethLayer() {
                 if (cityBoundaryLayer) {
                     cityBoundaryLayer.bringToFront();
                 }
+
+                setTimeout(() => {
+                    suppressTractPopupClose = false;
+                }, 350);
             });
 
             layer.on("popupclose", async () => {
-                if (!geoid || !activeFilters.tractGeoids.has(geoid)) {
+                if (suppressTractPopupClose) {
+                    return;
+                }
+
+                if (activeSelectionLayer !== "tracts" || !geoid || !activeFilters.tractGeoids.has(geoid)) {
                     return;
                 }
 
                 activeFilters.tractGeoids.delete(geoid);
+
+                if (activeFilters.tractGeoids.size === 0) {
+                    activeSelectionLayer = null;
+                }
 
                 await refreshDashboardPanels();
 
@@ -1076,6 +2055,8 @@ async function renderChoroplethLayer() {
                 if (cityBoundaryLayer) {
                     cityBoundaryLayer.bringToFront();
                 }
+
+                suppressTractPopupClose = false;
             });
         }
     });
@@ -1084,13 +2065,30 @@ async function renderChoroplethLayer() {
     activeDataLayer.addTo(dashboardMap);
 
     const nonZeroTracts = values.filter((value) => Number(value || 0) > 0).length;
-    setMapStatus(nonZeroTracts, "tracts with activity");
+    setMapStatus(
+        nonZeroTracts,
+        isEventActivityMetric(currentChoroplethMetric) ? "tracts with activity" : "tracts with data"
+    );
+    renderChoroplethLegend(breaks, currentChoroplethMetric, values);
 
     fitLayerIfPossible(choroplethLayer);
+
+    if (pointsVisible) {
+        await renderChoroplethPointOverlay();
+    }
 
     if (cityBoundaryLayer) {
         cityBoundaryLayer.bringToFront();
     }
+}
+
+async function renderChoroplethPointOverlay() {
+    const points = await fetchMapPoints();
+
+    pointOverlayLayer = buildClusterFeatureLayer(points);
+    pointOverlayLayer.addTo(dashboardMap);
+
+    setMapStatus(points.length, "clustered points over choropleth");
 }
 
 function fitLayerIfPossible(layer) {
@@ -1161,37 +2159,21 @@ function setMapStatus(count, label) {
 }
 
 function updateTogglePointsButton() {
-    const button = getElement("togglePointsButton");
+    const toggle = getElement("pointsLayerToggle");
 
-    if (!button) {
+    if (!toggle) {
         return;
     }
 
-    if (currentMapMode === "choropleth" || currentMapMode === "hex") {
-        button.disabled = true;
-        button.textContent = "Points Hidden";
-        return;
-    }
-
-    button.disabled = false;
-    button.textContent = pointsVisible ? "Hide Points" : "Show Points";
+    toggle.checked = pointsVisible;
+    toggle.closest(".map-layer-toggle")?.classList.toggle("active", pointsVisible);
 }
 
 async function togglePointsVisibility() {
-    if (currentMapMode === "choropleth" || currentMapMode === "hex") {
-        return;
-    }
-
     pointsVisible = !pointsVisible;
     updateTogglePointsButton();
 
-    if (!activeDataLayer || !dashboardMap) {
-        return;
-    }
-
-    if (currentMapMode === "points" || currentMapMode === "cluster") {
-        await updateMap();
-    }
+    await updateMap();
 }
 
 async function renderDistrictChart() {
@@ -1411,8 +2393,14 @@ async function renderRecordsTable() {
     }
 
     const query = buildFilterQuery();
+    const requestToken = recordsRequestToken + 1;
+    recordsRequestToken = requestToken;
     const separator = query ? `${query}&` : "?";
     const data = await fetchJson(`/api/records${separator}limit=25`);
+
+    if (requestToken !== recordsRequestToken || query !== buildFilterQuery()) {
+        return;
+    }
 
     if (data.status !== "success") {
         tableBody.innerHTML = `<tr><td colspan="7">Unable to load records</td></tr>`;
@@ -1466,7 +2454,7 @@ function setupEvents() {
         zoomToCurrentExtent();
     });
 
-    getElement("togglePointsButton")?.addEventListener("click", async () => {
+    getElement("pointsLayerToggle")?.addEventListener("change", async () => {
         await togglePointsVisibility();
     });
 
@@ -1519,6 +2507,8 @@ function setupEvents() {
 
             if (currentMapMode === "points" || currentMapMode === "cluster") {
                 pointsVisible = true;
+            } else if (currentMapMode === "choropleth") {
+                pointsVisible = false;
             }
 
             updateTogglePointsButton();
@@ -1530,6 +2520,7 @@ function setupEvents() {
 async function initializeDashboard() {
     setupEvents();
     await initializeDateRangeControls();
+    await initializeChoroplethMetricSelect();
     updateTogglePointsButton();
     await initializeMap();
     await refreshDashboard();
