@@ -74,3 +74,7 @@ artifacts/reports/*
 
 # Terraform local working directory
 infra/terraform/.terraform/
+
+# Local raw/reference files
+data/excels/
+papers/
