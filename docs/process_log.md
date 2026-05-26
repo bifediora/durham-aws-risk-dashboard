@@ -970,6 +970,7 @@ Chosen strategy:
 
 ```text
 Option 3: Hybrid Learning Approach
+```
 
 ## Step 199 - Terraform starter workspace initialized and validated
 
@@ -1076,3 +1077,80 @@ Planned Terraform focus:
 - Add outputs for public IP and app URL.
 - Later extend to monitoring resources such as CloudWatch alarms and SNS notifications.
 - Keep the first Terraform version simple and reproducible.
+
+## Phase 6: Terraform Infrastructure Foundation
+
+Date: May 2026
+
+### Purpose
+
+Started the Infrastructure as Code phase by creating a Terraform managed AWS foundation for the Durham Risk Intelligence Dashboard. This phase is intended to make the dashboard infrastructure reproducible while keeping the Terraform managed environment separate from the original manually created AWS deployment.
+
+### Work completed
+
+- Confirmed AWS CLI authentication using IAM user `terraform-dev-user`.
+- Confirmed Terraform workspace validation.
+- Added Terraform variables for EC2 configuration.
+- Added a Terraform managed EC2 instance.
+- Added a Terraform managed security group.
+- Used an Amazon Linux 2023 AMI lookup through Terraform.
+- Referenced the existing EC2 key pair `durham-risk-dashboard-key`.
+- Restricted SSH access to the approved CIDR `136.47.213.3/32`.
+- Opened dashboard application port `8000`.
+- Applied Terraform successfully.
+- Added Terraform outputs for instance, network access, dashboard URL, and SSH command details.
+- Confirmed SSH access to the Terraform managed EC2 instance.
+- Confirmed the instance is running Amazon Linux 2023.
+- Added Terraform state files and tfvars files to `.gitignore`.
+- Committed the Terraform foundation with `Add Terraform EC2 infrastructure foundation`.
+
+### Resources created
+
+```text
+EC2 instance: i-0b166d555696c2385
+Security group: sg-0624970f231477fae
+Public IP: 98.93.40.196
+Public DNS: ec2-98-93-40-196.compute-1.amazonaws.com
+```
+
+Terraform outputs now include:
+
+```text
+dashboard_instance_id
+dashboard_public_ip
+dashboard_public_dns
+dashboard_security_group_id
+dashboard_app_url
+dashboard_ssh_command
+```
+
+### Validation completed
+
+- Terraform validation completed successfully.
+- Terraform apply completed successfully.
+- Terraform outputs returned the expected EC2 and security group values.
+- SSH access to the Terraform managed instance was confirmed.
+- The EC2 host was confirmed as Amazon Linux 2023.
+
+### Security notes
+
+- AWS access keys, secret keys, credential files, and local credential paths are not documented in the repository.
+- SSH access is restricted to a single approved IP CIDR.
+- Terraform state files and local variable files are ignored by Git.
+- Terraform changes should remain separate from dashboard feature work.
+
+### Current status
+
+Terraform now provisions the initial AWS infrastructure foundation for the dashboard:
+
+- EC2 instance
+- Security group
+- Application port access
+- SSH access rule
+- Useful operational outputs
+
+The Terraform managed environment remains separate from the original manually created AWS deployment.
+
+### Next step
+
+Install and configure the dashboard application on the Terraform managed EC2 instance in a later phase. Do not proceed to application installation or `systemd` setup until the Terraform foundation documentation is reviewed.

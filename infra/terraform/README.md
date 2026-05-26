@@ -10,9 +10,11 @@ The dashboard application is a FastAPI based geospatial analytics project. This 
 
 ## Current Status
 
-This is a starter Terraform workspace.
+This is now an active Terraform infrastructure workspace.
 
-The AWS provider configuration, input variables, and placeholder outputs exist, but no AWS infrastructure resources are defined yet. At this stage, the workspace is ready for planning and incremental development, but it does not create EC2 instances, networking resources, load balancers, monitoring resources, or other AWS services.
+The AWS provider configuration, input variables, EC2 resource, security group resource, and operational outputs are defined. Terraform currently provisions a clean Amazon Linux 2023 EC2 instance and a security group for SSH and dashboard application access.
+
+This Terraform managed environment is separate from the original manually created AWS deployment, which remains the working reference architecture while the Infrastructure as Code version is built incrementally.
 
 ## Terraform Strategy
 
@@ -26,11 +28,11 @@ The manually created AWS deployment remains the working reference architecture w
 
 The goal is to learn and document Infrastructure as Code without disrupting the stable dashboard. Terraform changes should be introduced carefully, reviewed through `terraform plan`, and kept separate from dashboard feature work.
 
-## Planned First Implementation
+## Completed First Implementation
 
-The first Terraform implementation should stay small and reproducible.
+The first Terraform implementation is intentionally small and reproducible.
 
-Initial resources to add:
+Implemented resources and configuration:
 
 - EC2 instance
 - Security group
@@ -38,6 +40,17 @@ Initial resources to add:
 - HTTP or application port access
 - Project tags
 - Outputs for public IP and app URL
+
+## Current Terraform Outputs
+
+The workspace currently exposes these outputs:
+
+- `dashboard_instance_id`
+- `dashboard_public_ip`
+- `dashboard_public_dns`
+- `dashboard_security_group_id`
+- `dashboard_app_url`
+- `dashboard_ssh_command`
 
 ## Future Expansion
 
@@ -62,15 +75,15 @@ Future Terraform expansion may include:
 
 | File | Purpose |
 |---|---|
-| `main.tf` | Defines the Terraform version constraint, AWS provider requirement, and provider region |
-| `variables.tf` | Defines starter input variables such as AWS region, project name, environment, and owner |
-| `outputs.tf` | Defines placeholder outputs for project name, environment, and AWS region |
+| `main.tf` | Defines the Terraform version constraint, AWS provider requirement, provider region, EC2 instance, security group, and AMI lookup |
+| `variables.tf` | Defines input variables for AWS region, project metadata, EC2 configuration, key pair, SSH CIDR, and application port |
+| `outputs.tf` | Defines outputs for instance ID, public IP, public DNS, security group ID, dashboard URL, and SSH command |
 | `terraform.tfvars.example` | Provides example variable values for future local Terraform runs |
 | `.terraform.lock.hcl` | Locks provider dependency versions after `terraform init` |
 
-## Future Usage Commands
+## Usage Commands
 
-These commands are for future use once infrastructure resources are defined:
+Use these commands when reviewing or applying Terraform changes:
 
 ```bash
 terraform init
@@ -80,7 +93,7 @@ terraform plan
 terraform apply
 ```
 
-Do not run `terraform apply` until resources have been intentionally added and the plan has been reviewed.
+Review `terraform plan` before running `terraform apply`.
 
 ## Safety Notes
 
@@ -91,7 +104,4 @@ Do not run `terraform apply` until resources have been intentionally added and t
 
 ## Next Step
 
-The next step is adding the first Terraform resources:
-
-- EC2 instance
-- Security group
+The next step is installing and configuring the dashboard application on the Terraform managed EC2 instance in a later phase. Application installation and `systemd` setup have not been started in this Terraform checkpoint.

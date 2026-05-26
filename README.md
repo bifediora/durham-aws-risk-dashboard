@@ -98,6 +98,14 @@ Phase 6 will focus on repeatable AWS infrastructure for hosting the dashboard. P
 
 Technical value demonstrated by the project includes geospatial analytics, FastAPI, Leaflet, Chart.js, ACS enrichment, event data processing, AWS deployment, and Terraform readiness.
 
+## Terraform Infrastructure Foundation
+
+The project now includes a Terraform managed AWS infrastructure foundation in `infra/terraform`.
+
+Terraform currently provisions a clean EC2 instance and security group for the Durham Risk Intelligence Dashboard. This Terraform environment is separate from the original manually created AWS deployment, which remains the working reference architecture.
+
+The purpose of the Terraform foundation is to make the dashboard infrastructure reproducible, reviewable, and easier to extend in later phases. The first completed checkpoint includes EC2 provisioning, security group configuration, restricted SSH access, dashboard application port access, and operational outputs for instance and connection details.
+
 ## Current AWS Architecture
 
 The current deployment uses a Phase 1 AWS architecture in progress.
