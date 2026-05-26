@@ -78,3 +78,13 @@ infra/terraform/.terraform/
 # Local raw/reference files
 data/excels/
 papers/
+
+# Terraform local state and working files
+**/.terraform/
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/*.tfstate
+**/*.tfstate.*
+**/terraform.tfvars
+**/*.tfvars
+!**/terraform.tfvars.example

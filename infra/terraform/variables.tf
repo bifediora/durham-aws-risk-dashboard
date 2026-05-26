@@ -1,12 +1,5 @@
 # Durham Risk Intelligence Dashboard
 # Terraform input variables
-#
-# Purpose:
-# This file will eventually define reusable input variables for the Terraform
-# configuration.
-#
-# Current status:
-# Starter variables only.
 
 variable "aws_region" {
   description = "AWS region where the Durham Risk Intelligence Dashboard infrastructure will be deployed."
@@ -30,4 +23,34 @@ variable "owner" {
   description = "Resource owner for tagging."
   type        = string
   default     = "Byron Ifediora"
+}
+
+variable "instance_type" {
+  description = "EC2 instance type for the Terraform managed dashboard server."
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "key_name" {
+  description = "Existing AWS EC2 key pair name used for SSH access."
+  type        = string
+  default     = "durham-risk-dashboard-key"
+}
+
+variable "allowed_ssh_cidr" {
+  description = "CIDR block allowed to connect to the EC2 instance over SSH."
+  type        = string
+  default     = "136.47.213.3/32"
+}
+
+variable "allowed_app_cidr" {
+  description = "CIDR block allowed to access the dashboard application port."
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
+variable "app_port" {
+  description = "Application port used by the FastAPI dashboard."
+  type        = number
+  default     = 8000
 }
