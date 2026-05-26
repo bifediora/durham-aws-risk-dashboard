@@ -990,3 +990,89 @@ Result:
 - Terraform starter workspace is ready for future infrastructure as code development.
 - No AWS resources were created, changed, or destroyed.
 - Current manual AWS architecture remains stable.
+
+## Phase 5 - Dashboard MVP Polish and Analytical Layer Expansion
+
+Date: May 2026
+
+Completed the dashboard MVP polish phase and prepared the project for the next infrastructure phase.
+
+Work completed:
+
+- Preserved the dashboard as a FastAPI based analytical web application.
+- Refined the interactive Leaflet map interface.
+- Supported point, cluster, density, and choropleth map visualization modes.
+- Integrated Durham municipal boundary geography.
+- Added census tracts intersecting the Durham municipal boundary as the primary analytical geography.
+- Preserved full census tract geometries rather than clipping them to city limits.
+- Built spatial join workflows connecting event records to census tracts.
+- Built tract-level enrichment outputs combining ACS demographic indicators and event aggregates.
+- Added enriched arrest and shooting event outputs.
+- Added neighborhood context geography as an interpretive reference layer.
+- Added KPI cards for total arrests, hotspot areas, felony share, and recent activity trend.
+- Added chart summaries for district, severity, top offenses, and temporal patterns.
+- Consolidated separate temporal charts into a single Temporal Activity Explorer.
+- Added start date and end date filtering intended to update the full dashboard.
+- Added selected records functionality for reviewing filtered event records.
+- Refined tract popup behavior so closing a popup clears tract selection.
+- Preserved the current dashboard layout and stopped further UI iteration.
+- Committed the final dashboard MVP to GitHub.
+- Created the Git tag `dashboard-mvp-v1` as a stable checkpoint before beginning Terraform work.
+
+Key design decisions:
+
+- Census tracts remain the primary analytical geography for ACS joins, normalized rates, choropleths, and demographic analytics.
+- Neighborhoods are used as context geography for labels, public interpretation, and place-based orientation, not as the primary statistical engine.
+- Full tract geometries are preserved to maintain consistency with Census and ACS data.
+- The dashboard is framed as a preparedness and decision intelligence prototype, not as an enforcement prediction tool.
+- Population-normalized rates and percentage-based contextual indicators are prioritized for public-facing tract comparison.
+- The dashboard MVP is feature frozen so the next phase can focus on infrastructure and deployment maturity.
+
+Files and outputs created or updated:
+
+```text
+app/main.py
+app/templates/dashboard.html
+app/static/js/dashboard.js
+app/static/css/styles.css
+data/processed/arrests_with_tract_join.csv
+data/processed/durham_arrests_tract_enriched.csv
+data/processed/durham_arrests_tract_enriched.geojson
+data/processed/durham_shootings_tract_enriched.csv
+data/processed/durham_shootings_tract_enriched.geojson
+data/processed/durham_choropleth_metric_catalog.json
+data/processed/durham_neighborhoods_projected.geojson
+data/processed/durham_neighborhoods_web.geojson
+data/processed/durham_neighborhoods_inspection_summary.txt
+scripts/build_event_tract_enrichment.py
+scripts/build_neighborhood_context.py
+```
+
+Final status:
+
+```text
+Dashboard MVP feature frozen.
+Stable Git tag: dashboard-mvp-v1
+```
+
+Next phase:
+
+```text
+Phase 6: Infrastructure as Code with Terraform
+```
+
+Phase 6 objective:
+
+Provision the AWS infrastructure needed to host the Durham Risk Intelligence Dashboard in a repeatable and documented way.
+
+Planned Terraform focus:
+
+- Create a `terraform/` directory.
+- Add Terraform provider configuration.
+- Provision EC2 infrastructure.
+- Configure security groups.
+- Reference or configure SSH/key access.
+- Add project tagging.
+- Add outputs for public IP and app URL.
+- Later extend to monitoring resources such as CloudWatch alarms and SNS notifications.
+- Keep the first Terraform version simple and reproducible.

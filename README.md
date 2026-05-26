@@ -62,6 +62,42 @@ Target Group healthy targets: 2
 Dashboard through ALB: working
 ```
 
+## Dashboard MVP Checkpoint
+
+The dashboard MVP is feature frozen at the Git tag:
+
+```text
+dashboard-mvp-v1
+```
+
+This checkpoint captures Phase 5: Dashboard MVP Polish and Analytical Layer Expansion.
+
+The Durham Risk Intelligence Dashboard is a FastAPI based geospatial analytics application for public facing risk and resilience interpretation. It combines event data, municipal geography, census tract analytics, ACS demographic context, and neighborhood reference geography. The dashboard is a preparedness and decision intelligence prototype, not an enforcement prediction tool.
+
+Current dashboard capabilities include:
+
+- Interactive Leaflet map with point, cluster, density, and choropleth visualization modes
+- Durham municipal boundary geography and census tracts intersecting the municipal boundary
+- Full census tract geometries preserved for ACS and tract-level analytical consistency
+- Tract-level enrichment outputs combining ACS demographic indicators and event aggregates
+- Separate enriched arrest and shooting event outputs
+- Neighborhood context geography for public interpretation and local orientation
+- KPI cards, district and severity charts, top offense summaries, selected records, and a Temporal Activity Explorer
+- Start date and end date filtering intended to update the full dashboard
+- Refined tract popup behavior, choropleth legends, selected-feature highlighting, and spatial filtering interactions
+
+The dashboard should remain stable as a portfolio MVP. Future work should focus on infrastructure, deployment, monitoring, CI/CD, and documentation rather than adding new dashboard features.
+
+Next phase:
+
+```text
+Phase 6: Infrastructure as Code with Terraform
+```
+
+Phase 6 will focus on repeatable AWS infrastructure for hosting the dashboard. Planned Terraform work includes provider configuration, EC2 infrastructure, security groups, SSH/key access references, project tagging, public IP and app URL outputs, and later monitoring resources such as CloudWatch alarms and SNS notifications. The first Terraform version should remain simple and reproducible.
+
+Technical value demonstrated by the project includes geospatial analytics, FastAPI, Leaflet, Chart.js, ACS enrichment, event data processing, AWS deployment, and Terraform readiness.
+
 ## Current AWS Architecture
 
 The current deployment uses a Phase 1 AWS architecture in progress.
@@ -109,6 +145,7 @@ Supporting architecture documentation is stored in the `docs/` folder.
 | `docs/cloudwatch_monitoring_notes.md` | CloudWatch and SNS monitoring notes |
 | `docs/process_log.md` | Step by step project build log |
 | `docs/dashboard_enhancement_plan.md` | Dashboard improvement plan and feature notes |
+| `docs/dashboard_mvp_summary.md` | Dashboard MVP technical summary and Phase 6 handoff |
 
 The current architecture now follows this working deployment pattern:
 
