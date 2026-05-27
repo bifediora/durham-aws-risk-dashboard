@@ -60,3 +60,27 @@ variable "app_port" {
   type        = number
   default     = 8000
 }
+
+variable "alert_email" {
+  description = "Email address for CloudWatch alarm notifications. Leave blank to skip email subscription creation."
+  type        = string
+  default     = ""
+}
+
+variable "cpu_alarm_threshold" {
+  description = "CPU utilization percentage that triggers the high CPU CloudWatch alarm."
+  type        = number
+  default     = 80
+}
+
+variable "cpu_alarm_period" {
+  description = "CloudWatch alarm period in seconds for CPU evaluation."
+  type        = number
+  default     = 300
+}
+
+variable "cpu_alarm_evaluation_periods" {
+  description = "Number of periods required before the CPU alarm changes state."
+  type        = number
+  default     = 2
+}
