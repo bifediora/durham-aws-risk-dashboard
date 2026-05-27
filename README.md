@@ -108,15 +108,23 @@ The purpose of the Terraform foundation is to make the dashboard infrastructure 
 
 ## Terraform Managed Deployment Status
 
-The dashboard can now run successfully on the Terraform managed EC2 instance. The application was installed manually after Terraform provisioning, configured with a Python 3.11 virtual environment, and started as a persistent `systemd` service.
+The dashboard now runs publicly through Nginx on the Terraform managed EC2 instance. Nginx accepts standard HTTP traffic on port `80` and forwards requests to the FastAPI application running internally on `127.0.0.1:8000`.
 
-The health endpoint is working and returns the dashboard service status. The public application currently uses port `8000`:
+The application was installed manually after Terraform provisioning, configured with a Python 3.11 virtual environment, and started as a persistent `systemd` service. FastAPI still runs internally on port `8000`, but users no longer need to include `:8000` in the browser.
+
+Current public dashboard URL:
 
 ```text
-http://98.93.40.196:8000
+http://98.93.40.196
 ```
 
-The next planned improvement is likely Nginx reverse proxy configuration or CloudWatch monitoring for the Terraform managed deployment.
+Current health check URL:
+
+```text
+http://98.93.40.196/health
+```
+
+The next planned improvement is likely CloudWatch monitoring, deployment automation, or HTTPS/domain setup for the Terraform managed deployment.
 
 ## Current AWS Architecture
 

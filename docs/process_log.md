@@ -1231,3 +1231,80 @@ The dashboard now runs successfully on the Terraform managed EC2 instance. Terra
 #### Next step
 
 The next likely improvement is to add Nginx reverse proxy configuration or CloudWatch monitoring for the Terraform managed deployment. Do not proceed to Nginx, CloudWatch, or Terraform automation until this deployment checkpoint is reviewed.
+
+### Nginx Reverse Proxy for Public Dashboard Access
+
+#### Purpose
+
+Documented the successful Nginx reverse proxy milestone for the Terraform managed EC2 deployment. This checkpoint moves public dashboard access from direct FastAPI port access to standard HTTP traffic on port `80`, while keeping the FastAPI application running internally through `systemd` on port `8000`.
+
+#### Work completed
+
+- Configured Nginx as a reverse proxy on the Terraform managed EC2 instance.
+- Forwarded public HTTP traffic from port `80` to the FastAPI application on `127.0.0.1:8000`.
+- Created the Nginx configuration manually on the EC2 instance:
+
+```text
+/etc/nginx/conf.d/durham-risk-dashboard.conf
+```
+
+- Tested the Nginx configuration syntax successfully with `sudo nginx -t`.
+- Enabled and restarted the Nginx service.
+- Confirmed Nginx is active and running.
+- Confirmed the dashboard now loads publicly without requiring `:8000`.
+
+#### Reverse proxy routing pattern
+
+```text
+Public user
+  -> port 80
+  -> Nginx
+  -> 127.0.0.1:8000
+  -> FastAPI app
+```
+
+#### Terraform security group update
+
+- Updated the Terraform managed security group to allow inbound HTTP traffic on port `80`.
+- Terraform plan showed:
+
+```text
+Plan: 0 to add, 1 to change, 0 to destroy.
+```
+
+- Terraform apply updated the security group in place.
+- Terraform continues to manage the EC2 instance and security group, while Nginx configuration was performed manually as part of the hybrid learning workflow.
+
+#### Validation completed
+
+- Local reverse proxy health check succeeded on the EC2 instance:
+
+```text
+curl http://127.0.0.1/health
+```
+
+- Public reverse proxy health check succeeded from the local machine:
+
+```text
+curl http://98.93.40.196/health
+```
+
+- Current public dashboard URL:
+
+```text
+http://98.93.40.196
+```
+
+- Current health check URL:
+
+```text
+http://98.93.40.196/health
+```
+
+#### Current status
+
+The Terraform managed EC2 deployment now serves the dashboard through Nginx on standard HTTP port `80`. FastAPI continues to run internally on port `8000` through the `systemd` service.
+
+#### Next step
+
+The next likely improvement is CloudWatch monitoring, deployment automation, HTTPS, or domain setup. Do not proceed to CloudWatch, HTTPS, Route 53, or CI/CD until this Nginx reverse proxy checkpoint is reviewed.

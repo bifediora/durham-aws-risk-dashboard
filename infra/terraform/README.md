@@ -12,11 +12,11 @@ The dashboard application is a FastAPI based geospatial analytics project. This 
 
 This is now an active Terraform infrastructure workspace.
 
-The AWS provider configuration, input variables, EC2 resource, security group resource, and operational outputs are defined. Terraform currently provisions a clean Amazon Linux 2023 EC2 instance and a security group for SSH and dashboard application access.
+The AWS provider configuration, input variables, EC2 resource, security group resource, and operational outputs are defined. Terraform currently provisions a clean Amazon Linux 2023 EC2 instance and a security group for SSH and dashboard web access.
 
 This Terraform managed environment is separate from the original manually created AWS deployment, which remains the working reference architecture while the Infrastructure as Code version is built incrementally.
 
-After provisioning, the dashboard application was installed manually on the Terraform managed EC2 instance and configured as a persistent `systemd` service. Terraform currently manages the infrastructure foundation only; it does not yet automate application installation, dependency setup, service creation, or deployment updates.
+After provisioning, the dashboard application was installed manually on the Terraform managed EC2 instance and configured as a persistent `systemd` service. Nginx was also configured manually as a reverse proxy. Terraform currently manages the infrastructure foundation and security group rules only; it does not yet automate application installation, dependency setup, service creation, Nginx setup, or deployment updates.
 
 ## Terraform Strategy
 
@@ -63,7 +63,7 @@ Manual setup completed after Terraform apply:
 Current public application URL:
 
 ```text
-http://98.93.40.196:8000
+http://98.93.40.196
 ```
 
 Health check result:
@@ -73,6 +73,36 @@ Health check result:
 ```
 
 This manual deployment step is part of the hybrid learning approach. Future work may automate application setup with `user_data`, provisioning scripts, configuration management, or CI/CD.
+
+## Nginx Reverse Proxy Checkpoint
+
+Nginx has been configured manually on the Terraform managed EC2 instance as a reverse proxy.
+
+Current request routing:
+
+```text
+Public user
+  -> port 80
+  -> Nginx
+  -> 127.0.0.1:8000
+  -> FastAPI app
+```
+
+Nginx configuration path on the EC2 instance:
+
+```text
+/etc/nginx/conf.d/durham-risk-dashboard.conf
+```
+
+Terraform now manages the security group rule that allows inbound HTTP traffic on port `80`. The reverse proxy configuration itself was performed manually as part of the hybrid learning approach.
+
+Current health check URL:
+
+```text
+http://98.93.40.196/health
+```
+
+FastAPI app traffic should eventually be limited internally while Nginx handles public web traffic. Future work may automate Nginx setup through EC2 `user_data`, a provisioning script, Ansible, or CI/CD.
 
 ## Current Terraform Outputs
 
@@ -104,6 +134,8 @@ Future Terraform expansion may include:
 - IAM role and instance profile
 - EC2 `user_data` for application bootstrap
 - Provisioning scripts for repeatable app setup
+- Automated Nginx reverse proxy setup
+- Internal-only FastAPI application access behind Nginx
 - GitHub Actions deployment integration
 
 ## Current Files
@@ -139,4 +171,4 @@ Review `terraform plan` before running `terraform apply`.
 
 ## Next Step
 
-The next likely infrastructure improvement is Nginx reverse proxy configuration or CloudWatch monitoring for the Terraform managed deployment. Future Terraform work may automate the manual application setup after the current deployment path is reviewed.
+The next likely infrastructure improvement is CloudWatch monitoring, deployment automation, HTTPS, or domain setup for the Terraform managed deployment. Future Terraform work may automate the manual application and Nginx setup after the current deployment path is reviewed.
