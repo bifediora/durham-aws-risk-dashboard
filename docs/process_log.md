@@ -1154,3 +1154,80 @@ The Terraform managed environment remains separate from the original manually cr
 ### Next step
 
 Install and configure the dashboard application on the Terraform managed EC2 instance in a later phase. Do not proceed to application installation or `systemd` setup until the Terraform foundation documentation is reviewed.
+
+### Terraform EC2 Application Deployment and systemd Service
+
+#### Purpose
+
+Documented the first successful application deployment onto the Terraform managed EC2 instance. This checkpoint confirms that the dashboard can run on the new Terraform provisioned server while preserving the hybrid learning approach: Terraform provisions the infrastructure foundation, and application setup is performed manually for inspection and documentation before later automation.
+
+#### Work completed
+
+- Confirmed SSH access to the Terraform managed EC2 instance.
+- Confirmed the EC2 instance is running Amazon Linux 2023.
+- Installed base system packages:
+  - `git`
+  - `python3`
+  - `python3-pip`
+  - `python3-devel`
+  - `gcc`
+  - `nginx`
+- Cloned the GitHub repository onto the EC2 instance.
+- Installed Python 3.11 and used it for the project virtual environment.
+- Installed application dependencies in the project virtual environment.
+- Identified missing runtime dependency `shapely`.
+- Added `shapely` to `requirements.txt` and committed the dependency update.
+- Started the FastAPI dashboard successfully with Uvicorn.
+- Created a persistent `systemd` service for the dashboard.
+- Enabled and started the `systemd` service.
+- Confirmed the service is active and running.
+
+#### Runtime environment
+
+```text
+Instance operating system: Amazon Linux 2023
+Python runtime: Python 3.11
+Application server: Uvicorn
+Service manager: systemd
+Public application port: 8000
+```
+
+#### Deployment path
+
+```text
+/home/ec2-user/durham-aws-risk-dashboard
+/home/ec2-user/durham-aws-risk-dashboard/durham-risk-aws-env
+```
+
+#### Service management
+
+```text
+/etc/systemd/system/durham-risk-dashboard.service
+```
+
+The dashboard service is enabled and running through `systemd`.
+
+#### Validation completed
+
+- SSH access to the Terraform managed EC2 instance was confirmed.
+- The dashboard application started successfully with Uvicorn.
+- The `systemd` service was confirmed active and running.
+- The health endpoint returned:
+
+```json
+{"status":"healthy","service":"Durham Risk Intelligence Dashboard","version":"0.3.6"}
+```
+
+- The dashboard is publicly accessible at:
+
+```text
+http://98.93.40.196:8000
+```
+
+#### Current status
+
+The dashboard now runs successfully on the Terraform managed EC2 instance. Terraform currently manages the EC2 instance and security group, while application installation and service configuration were performed manually after provisioning.
+
+#### Next step
+
+The next likely improvement is to add Nginx reverse proxy configuration or CloudWatch monitoring for the Terraform managed deployment. Do not proceed to Nginx, CloudWatch, or Terraform automation until this deployment checkpoint is reviewed.

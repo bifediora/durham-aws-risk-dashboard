@@ -106,6 +106,18 @@ Terraform currently provisions a clean EC2 instance and security group for the D
 
 The purpose of the Terraform foundation is to make the dashboard infrastructure reproducible, reviewable, and easier to extend in later phases. The first completed checkpoint includes EC2 provisioning, security group configuration, restricted SSH access, dashboard application port access, and operational outputs for instance and connection details.
 
+## Terraform Managed Deployment Status
+
+The dashboard can now run successfully on the Terraform managed EC2 instance. The application was installed manually after Terraform provisioning, configured with a Python 3.11 virtual environment, and started as a persistent `systemd` service.
+
+The health endpoint is working and returns the dashboard service status. The public application currently uses port `8000`:
+
+```text
+http://98.93.40.196:8000
+```
+
+The next planned improvement is likely Nginx reverse proxy configuration or CloudWatch monitoring for the Terraform managed deployment.
+
 ## Current AWS Architecture
 
 The current deployment uses a Phase 1 AWS architecture in progress.

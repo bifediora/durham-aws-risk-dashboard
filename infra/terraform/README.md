@@ -16,6 +16,8 @@ The AWS provider configuration, input variables, EC2 resource, security group re
 
 This Terraform managed environment is separate from the original manually created AWS deployment, which remains the working reference architecture while the Infrastructure as Code version is built incrementally.
 
+After provisioning, the dashboard application was installed manually on the Terraform managed EC2 instance and configured as a persistent `systemd` service. Terraform currently manages the infrastructure foundation only; it does not yet automate application installation, dependency setup, service creation, or deployment updates.
+
 ## Terraform Strategy
 
 The selected Terraform strategy is:
@@ -40,6 +42,37 @@ Implemented resources and configuration:
 - HTTP or application port access
 - Project tags
 - Outputs for public IP and app URL
+
+## Manual Application Deployment Checkpoint
+
+The FastAPI dashboard has been successfully deployed on the Terraform managed EC2 instance after provisioning.
+
+Manual setup completed after Terraform apply:
+
+- Confirmed SSH access to the EC2 instance.
+- Confirmed Amazon Linux 2023 runtime.
+- Installed base packages including Git, Python, build tooling, and Nginx.
+- Cloned the project repository to `/home/ec2-user/durham-aws-risk-dashboard`.
+- Created the project virtual environment with Python 3.11.
+- Installed application dependencies.
+- Added the missing runtime dependency `shapely` to `requirements.txt`.
+- Started the dashboard with Uvicorn.
+- Created and enabled `/etc/systemd/system/durham-risk-dashboard.service`.
+- Confirmed the service is active and running.
+
+Current public application URL:
+
+```text
+http://98.93.40.196:8000
+```
+
+Health check result:
+
+```json
+{"status":"healthy","service":"Durham Risk Intelligence Dashboard","version":"0.3.6"}
+```
+
+This manual deployment step is part of the hybrid learning approach. Future work may automate application setup with `user_data`, provisioning scripts, configuration management, or CI/CD.
 
 ## Current Terraform Outputs
 
@@ -69,6 +102,8 @@ Future Terraform expansion may include:
 - CloudWatch alarms
 - SNS topic
 - IAM role and instance profile
+- EC2 `user_data` for application bootstrap
+- Provisioning scripts for repeatable app setup
 - GitHub Actions deployment integration
 
 ## Current Files
@@ -104,4 +139,4 @@ Review `terraform plan` before running `terraform apply`.
 
 ## Next Step
 
-The next step is installing and configuring the dashboard application on the Terraform managed EC2 instance in a later phase. Application installation and `systemd` setup have not been started in this Terraform checkpoint.
+The next likely infrastructure improvement is Nginx reverse proxy configuration or CloudWatch monitoring for the Terraform managed deployment. Future Terraform work may automate the manual application setup after the current deployment path is reviewed.
