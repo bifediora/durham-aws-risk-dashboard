@@ -16,7 +16,7 @@ The AWS provider configuration, input variables, EC2 resource, security group re
 
 This Terraform managed environment is separate from the original manually created AWS deployment, which remains the working reference architecture while the Infrastructure as Code version is built incrementally.
 
-After provisioning, the dashboard application was installed manually on the Terraform managed EC2 instance and configured as a persistent `systemd` service. Nginx was also configured manually as a reverse proxy. Terraform currently manages the infrastructure foundation and security group rules only; it does not yet automate application installation, dependency setup, service creation, Nginx setup, or deployment updates.
+After provisioning, the dashboard application was installed manually on the Terraform managed EC2 instance and configured as a persistent `systemd` service. Nginx was also configured manually as a reverse proxy. Terraform currently manages the infrastructure foundation, security group rules, SNS topic, and CloudWatch alarms. It does not yet automate application installation, dependency setup, service creation, Nginx setup, or deployment updates.
 
 ## Terraform Strategy
 
@@ -40,6 +40,8 @@ Implemented resources and configuration:
 - Security group
 - SSH access configuration
 - HTTP or application port access
+- SNS topic
+- CloudWatch alarms
 - Project tags
 - Outputs for public IP and app URL
 
@@ -104,6 +106,32 @@ http://98.93.40.196/health
 
 FastAPI app traffic should eventually be limited internally while Nginx handles public web traffic. Future work may automate Nginx setup through EC2 `user_data`, a provisioning script, Ansible, or CI/CD.
 
+## CloudWatch and SNS Monitoring Checkpoint
+
+Terraform now manages basic monitoring and alerting resources for the EC2 dashboard deployment.
+
+Managed monitoring resources:
+
+- SNS topic: `durham-risk-dashboard-dev-alerts`
+- CloudWatch alarm: `durham-risk-dashboard-dev-ec2-high-cpu`
+- CloudWatch alarm: `durham-risk-dashboard-dev-ec2-status-check-failed`
+
+Current monitored signals:
+
+- EC2 CPU utilization
+- EC2 status check failure
+
+The SNS email endpoint is configured through local Terraform variable values, such as `terraform.tfvars`, and should not be committed. The `terraform.tfvars` file remains ignored by Git to avoid exposing private notification endpoints or other local configuration values.
+
+Current alarm states:
+
+```text
+CPUUtilization: OK
+StatusCheckFailed: OK
+```
+
+Future monitoring improvements may include application health check monitoring, log forwarding, a CloudWatch dashboard, and notification refinement.
+
 ## Current Terraform Outputs
 
 The workspace currently exposes these outputs:
@@ -131,6 +159,10 @@ Future Terraform expansion may include:
 - S3 artifact bucket
 - CloudWatch alarms
 - SNS topic
+- Application health check monitoring
+- CloudWatch log forwarding
+- CloudWatch dashboard
+- Notification refinement
 - IAM role and instance profile
 - EC2 `user_data` for application bootstrap
 - Provisioning scripts for repeatable app setup
@@ -171,4 +203,4 @@ Review `terraform plan` before running `terraform apply`.
 
 ## Next Step
 
-The next likely infrastructure improvement is CloudWatch monitoring, deployment automation, HTTPS, or domain setup for the Terraform managed deployment. Future Terraform work may automate the manual application and Nginx setup after the current deployment path is reviewed.
+The next likely improvements are application health check monitoring, log forwarding, deployment automation, HTTPS, or domain setup for the Terraform managed deployment. Future Terraform work may automate the manual application and Nginx setup after the current deployment path is reviewed.

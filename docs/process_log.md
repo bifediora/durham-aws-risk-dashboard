@@ -1308,3 +1308,77 @@ The Terraform managed EC2 deployment now serves the dashboard through Nginx on s
 #### Next step
 
 The next likely improvement is CloudWatch monitoring, deployment automation, HTTPS, or domain setup. Do not proceed to CloudWatch, HTTPS, Route 53, or CI/CD until this Nginx reverse proxy checkpoint is reviewed.
+
+### CloudWatch and SNS Monitoring
+
+#### Purpose
+
+Documented the first Terraform managed monitoring milestone for the Durham Risk Intelligence Dashboard deployment. This checkpoint adds basic operational visibility and alerting for the Terraform managed EC2 instance while keeping the dashboard MVP application unchanged.
+
+#### Work completed
+
+- Confirmed the Terraform managed EC2 instance is running.
+- Confirmed CloudWatch is receiving EC2 CPU metrics.
+- Added Terraform monitoring variables:
+  - `alert_email`
+  - `cpu_alarm_threshold`
+  - `cpu_alarm_period`
+  - `cpu_alarm_evaluation_periods`
+- Added a Terraform managed SNS topic.
+- Added a Terraform managed CloudWatch alarm for EC2 high CPU.
+- Added a Terraform managed CloudWatch alarm for EC2 status check failure.
+- Applied Terraform successfully.
+- Confirmed the CloudWatch alarms exist.
+- Added an SNS email subscription.
+- Confirmed the SNS email subscription after the AWS confirmation email was found in spam.
+- Confirmed both alarm states are `OK`.
+- Committed Terraform monitoring changes with `Add CloudWatch alarms and SNS alerting`.
+
+#### Monitoring resources created
+
+```text
+SNS topic: durham-risk-dashboard-dev-alerts
+CloudWatch alarm: durham-risk-dashboard-dev-ec2-high-cpu
+CloudWatch alarm: durham-risk-dashboard-dev-ec2-status-check-failed
+```
+
+Monitored signals:
+
+- EC2 CPU utilization
+- EC2 status check failure
+
+#### Alerting setup
+
+- Alerts are routed through the Terraform managed SNS topic.
+- The email subscription was confirmed through AWS SNS.
+- The alert email value is provided locally through Terraform variables and should not be committed.
+
+#### Validation completed
+
+- Terraform apply completed successfully.
+- CloudWatch alarms were visible in AWS.
+- SNS email subscription was confirmed.
+- Alarm states were confirmed:
+
+```text
+CPUUtilization: OK
+StatusCheckFailed: OK
+```
+
+#### Current status
+
+The Terraform managed deployment now includes basic CloudWatch monitoring and SNS email alerting for EC2 infrastructure health. The dashboard remains publicly available through Nginx on port `80`:
+
+```text
+http://98.93.40.196
+```
+
+Health check URL:
+
+```text
+http://98.93.40.196/health
+```
+
+#### Next step
+
+The next likely monitoring improvement is application health check monitoring, log forwarding, a CloudWatch dashboard, or notification refinement. Do not proceed to application health monitoring, HTTPS, Route 53, or CI/CD until this monitoring checkpoint is reviewed.

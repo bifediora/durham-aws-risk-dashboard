@@ -126,6 +126,14 @@ http://98.93.40.196/health
 
 The next planned improvement is likely CloudWatch monitoring, deployment automation, or HTTPS/domain setup for the Terraform managed deployment.
 
+## Monitoring Status
+
+The Terraform managed deployment now includes basic CloudWatch monitoring for the EC2 host. Current monitored signals include EC2 CPU utilization and EC2 status checks.
+
+Alerts are routed through a Terraform managed SNS topic with a confirmed email notification subscription. The current CloudWatch alarm states are `OK`.
+
+This improves operational readiness by adding infrastructure health visibility and alerting for the public dashboard deployment.
+
 ## Current AWS Architecture
 
 The current deployment uses a Phase 1 AWS architecture in progress.
