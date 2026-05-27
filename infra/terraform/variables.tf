@@ -44,13 +44,19 @@ variable "allowed_ssh_cidr" {
 }
 
 variable "allowed_app_cidr" {
-  description = "CIDR block allowed to access the dashboard application port."
+  description = "CIDR block allowed to access the public dashboard application."
   type        = string
   default     = "0.0.0.0/0"
 }
 
+variable "http_port" {
+  description = "HTTP port used by the Nginx reverse proxy."
+  type        = number
+  default     = 80
+}
+
 variable "app_port" {
-  description = "Application port used by the FastAPI dashboard."
+  description = "Application port used internally by the FastAPI dashboard."
   type        = number
   default     = 8000
 }

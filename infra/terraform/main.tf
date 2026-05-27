@@ -1,5 +1,5 @@
 # Durham Risk Intelligence Dashboard
-# Terraform starter configuration
+# Terraform infrastructure configuration
 
 terraform {
   required_version = ">= 1.6.0"
@@ -57,6 +57,14 @@ resource "aws_security_group" "dashboard_ec2" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = [var.allowed_ssh_cidr]
+  }
+
+  ingress {
+    description = "Allow HTTP traffic to Nginx reverse proxy"
+    from_port   = var.http_port
+    to_port     = var.http_port
+    protocol    = "tcp"
+    cidr_blocks = [var.allowed_app_cidr]
   }
 
   ingress {
