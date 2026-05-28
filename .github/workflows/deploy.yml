@@ -1,0 +1,67 @@
+name: Deploy Durham Risk Dashboard
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to EC2 with SSM
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      EC2_INSTANCE_ID: i-0998e40b915d53346
+      AWS_ROLE_ARN: arn:aws:iam::333973504198:role/durham-risk-dashboard-dev-github-actions-deploy-role
+
+    steps:
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy application through SSM
+        id: deploy
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy Durham Risk Dashboard from GitHub Actions" \
+            --parameters 'commands=[
+              "set -e",
+              "sudo -u ec2-user bash -lc '\''cd /home/ec2-user/durham-aws-risk-dashboard && git fetch origin main'\''",
+              "sudo -u ec2-user bash -lc '\''cd /home/ec2-user/durham-aws-risk-dashboard && git reset --hard origin/main'\''",
+              "sudo -u ec2-user bash -lc '\''cd /home/ec2-user/durham-aws-risk-dashboard && source durham-risk-aws-env/bin/activate && pip install -r requirements.txt'\''",
+              "systemctl restart durham-risk-dashboard.service",
+              "sleep 5",
+              "systemctl status durham-risk-dashboard.service --no-pager",
+              "curl -f http://localhost:8000/health"
+            ]' \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "command_id=$COMMAND_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for SSM command to finish
+        run: |
+          aws ssm wait command-executed \
+            --region "$AWS_REGION" \
+            --command-id "${{ steps.deploy.outputs.command_id }}" \
+            --instance-id "$EC2_INSTANCE_ID"
+
+      - name: Print SSM command result
+        run: |
+          aws ssm get-command-invocation \
+            --region "$AWS_REGION" \
+            --command-id "${{ steps.deploy.outputs.command_id }}" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --query "{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}" \
+            --output json
