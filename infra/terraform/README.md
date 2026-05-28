@@ -16,7 +16,7 @@ The AWS provider configuration, input variables, EC2 resource, security group re
 
 This Terraform managed environment is separate from the original manually created AWS deployment, which remains the working reference architecture while the Infrastructure as Code version is built incrementally.
 
-After provisioning, the dashboard application was installed manually on the Terraform managed EC2 instance and configured as a persistent `systemd` service. Nginx was also configured manually as a reverse proxy. Terraform currently manages the infrastructure foundation, security group rules, SNS topic, and CloudWatch alarms. It does not yet automate application installation, dependency setup, service creation, Nginx setup, or deployment updates.
+Terraform now passes a bootstrap script to the EC2 instance through `user_data`. The bootstrap process configures the application runtime, `systemd` service, and Nginx reverse proxy when a new instance is created. Terraform currently manages the infrastructure foundation, security group rules, EC2 bootstrap handoff, SNS topic, and CloudWatch alarms.
 
 ## Terraform Strategy
 
@@ -65,7 +65,7 @@ Manual setup completed after Terraform apply:
 Current public application URL:
 
 ```text
-http://98.93.40.196
+http://54.242.183.123
 ```
 
 Health check result:
@@ -75,6 +75,44 @@ Health check result:
 ```
 
 This manual deployment step is part of the hybrid learning approach. Future work may automate application setup with `user_data`, provisioning scripts, configuration management, or CI/CD.
+
+## EC2 Bootstrap Automation Checkpoint
+
+Terraform now connects an EC2 bootstrap script to the dashboard instance through `user_data`.
+
+Bootstrap script:
+
+```text
+infra/scripts/ec2_bootstrap.sh
+```
+
+The bootstrap process now configures:
+
+- System packages, including Git, Python 3.11, development dependencies, `gcc`, and Nginx.
+- Project repository clone.
+- Python virtual environment.
+- Application dependency installation from `requirements.txt`.
+- FastAPI dashboard `systemd` service.
+- Nginx reverse proxy configuration.
+- Startup and enablement for both the dashboard service and Nginx.
+
+Terraform also uses `user_data_replace_on_change` so bootstrap script changes intentionally recreate the EC2 instance. This makes replacement behavior explicit and keeps the deployment recoverable.
+
+This milestone reduced manual setup risk. If Terraform replaces the EC2 instance, the dashboard runtime can now be recreated automatically instead of relying on manual server configuration.
+
+Current public dashboard URL:
+
+```text
+http://54.242.183.123
+```
+
+Current health check URL:
+
+```text
+http://54.242.183.123/health
+```
+
+Future improvements may include CI/CD, a dedicated deployment script, AMI baking, or SSM based management.
 
 ## Nginx Reverse Proxy Checkpoint
 
@@ -101,7 +139,7 @@ Terraform now manages the security group rule that allows inbound HTTP traffic o
 Current health check URL:
 
 ```text
-http://98.93.40.196/health
+http://54.242.183.123/health
 ```
 
 FastAPI app traffic should eventually be limited internally while Nginx handles public web traffic. Future work may automate Nginx setup through EC2 `user_data`, a provisioning script, Ansible, or CI/CD.
@@ -168,6 +206,9 @@ Future Terraform expansion may include:
 - Provisioning scripts for repeatable app setup
 - Automated Nginx reverse proxy setup
 - Internal-only FastAPI application access behind Nginx
+- Dedicated deployment script
+- AMI baking
+- SSM based management
 - GitHub Actions deployment integration
 
 ## Current Files
@@ -179,6 +220,7 @@ Future Terraform expansion may include:
 | `outputs.tf` | Defines outputs for instance ID, public IP, public DNS, security group ID, dashboard URL, and SSH command |
 | `terraform.tfvars.example` | Provides example variable values for future local Terraform runs |
 | `.terraform.lock.hcl` | Locks provider dependency versions after `terraform init` |
+| `../scripts/ec2_bootstrap.sh` | Bootstraps the EC2 application runtime, `systemd` service, and Nginx reverse proxy through Terraform `user_data` |
 
 ## Usage Commands
 
@@ -203,4 +245,4 @@ Review `terraform plan` before running `terraform apply`.
 
 ## Next Step
 
-The next likely improvements are application health check monitoring, log forwarding, deployment automation, HTTPS, or domain setup for the Terraform managed deployment. Future Terraform work may automate the manual application and Nginx setup after the current deployment path is reviewed.
+The next likely improvements are CI/CD, a dedicated deployment script, AMI baking, SSM based management, HTTPS, or domain setup for the Terraform managed deployment. Future work should build on the current `user_data` bootstrap foundation.

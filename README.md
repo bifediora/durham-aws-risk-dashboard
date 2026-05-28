@@ -115,16 +115,36 @@ The application was installed manually after Terraform provisioning, configured 
 Current public dashboard URL:
 
 ```text
-http://98.93.40.196
+http://54.242.183.123
 ```
 
 Current health check URL:
 
 ```text
-http://98.93.40.196/health
+http://54.242.183.123/health
 ```
 
-The next planned improvement is likely CloudWatch monitoring, deployment automation, or HTTPS/domain setup for the Terraform managed deployment.
+The next planned improvement is likely CI/CD, HTTPS/domain setup, or expanded monitoring for the Terraform managed deployment.
+
+## Deployment Automation Status
+
+The Terraform deployment now uses an EC2 bootstrap script connected through `user_data`.
+
+The bootstrap process recreates the dashboard runtime automatically when a new EC2 instance is created. It installs system dependencies, clones the project repository, creates the Python 3.11 virtual environment, installs application dependencies, configures the FastAPI `systemd` service, and configures Nginx as the public reverse proxy.
+
+This improves reproducibility and reduces manual setup risk if Terraform replaces the EC2 instance. It also strengthens the project's Infrastructure as Code and cloud engineering portfolio value.
+
+Current public dashboard URL:
+
+```text
+http://54.242.183.123
+```
+
+Current health check URL:
+
+```text
+http://54.242.183.123/health
+```
 
 ## Monitoring Status
 

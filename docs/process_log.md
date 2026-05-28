@@ -1382,3 +1382,73 @@ http://98.93.40.196/health
 #### Next step
 
 The next likely monitoring improvement is application health check monitoring, log forwarding, a CloudWatch dashboard, or notification refinement. Do not proceed to application health monitoring, HTTPS, Route 53, or CI/CD until this monitoring checkpoint is reviewed.
+
+### EC2 Bootstrap Automation with Terraform user_data
+
+#### Purpose
+
+Documented the successful EC2 bootstrap automation milestone for the Terraform managed deployment. This checkpoint makes the dashboard runtime reproducible when Terraform creates or replaces an EC2 instance.
+
+#### Problem discovered
+
+Manual EC2 configuration was lost when Terraform replaced the instance. This showed that infrastructure provisioning alone was not enough for a recoverable deployment: if an EC2 instance is replaced, manually installed packages, cloned code, service files, and Nginx configuration are lost unless they are automated.
+
+Bootstrapping with Terraform `user_data` improves reproducibility and makes the deployment easier to recover, review, and extend.
+
+#### Work completed
+
+- Created the EC2 bootstrap script:
+
+```text
+infra/scripts/ec2_bootstrap.sh
+```
+
+- Connected the bootstrap script to the Terraform EC2 instance through `user_data`.
+- Enabled `user_data_replace_on_change` so future bootstrap script changes intentionally recreate the instance.
+- Replaced the clean EC2 instance through Terraform.
+- Validated that the new instance configured itself automatically.
+- Committed the automation with `Automate EC2 dashboard bootstrap with user data`.
+
+#### Bootstrap actions automated
+
+The new EC2 instance now automatically:
+
+- Installs `git`.
+- Installs Python 3.11.
+- Installs pip and development dependencies.
+- Installs `gcc`.
+- Installs Nginx.
+- Clones the GitHub repository.
+- Creates the Python virtual environment.
+- Installs `requirements.txt`.
+- Creates the `systemd` service.
+- Starts and enables the FastAPI dashboard service.
+- Creates the Nginx reverse proxy configuration.
+- Starts and enables Nginx.
+
+#### Validation completed
+
+- The `/health` endpoint returned healthy.
+- The homepage returned HTML.
+- Nginx served the app publicly on port `80`.
+- Current public dashboard URL:
+
+```text
+http://54.242.183.123
+```
+
+- Current public health check URL:
+
+```text
+http://54.242.183.123/health
+```
+
+#### Current status
+
+The Terraform managed EC2 deployment now includes automated bootstrap configuration through `user_data`. The EC2 instance can recreate the dashboard runtime automatically, including the application environment, `systemd` service, and Nginx reverse proxy.
+
+This reduces manual setup risk and strengthens the project as an Infrastructure as Code and cloud engineering portfolio deployment.
+
+#### Next step
+
+The next likely improvements are CI/CD, a dedicated deployment script, AMI baking, SSM based management, HTTPS, or Route 53. Do not proceed to CI/CD, Route 53, HTTPS, or application health monitoring until this bootstrap automation checkpoint is reviewed.
