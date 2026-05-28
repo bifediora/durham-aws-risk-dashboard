@@ -25,6 +25,9 @@ locals {
   }
 
   name_prefix = "${var.project_name}-${var.environment}"
+
+  github_repo_full_name = "${var.github_repo_owner}/${var.github_repo_name}"
+  github_branch_subject = "repo:${local.github_repo_full_name}:ref:refs/heads/${var.github_deploy_branch}"
 }
 
 data "aws_ami" "amazon_linux_2023" {
@@ -112,6 +115,77 @@ resource "aws_iam_instance_profile" "dashboard_ec2_ssm_profile" {
 
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-ec2-ssm-profile"
+  })
+}
+
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  url = "https://token.actions.githubusercontent.com"
+
+  client_id_list = [
+    "sts.amazonaws.com"
+  ]
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-github-actions-oidc"
+  })
+}
+
+resource "aws_iam_role" "github_actions_deploy_role" {
+  name = "${local.name_prefix}-github-actions-deploy-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.github_actions.arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+            "token.actions.githubusercontent.com:sub" = local.github_branch_subject
+          }
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-github-actions-deploy-role"
+  })
+}
+
+resource "aws_iam_role_policy" "github_actions_ssm_deploy_policy" {
+  name = "${local.name_prefix}-github-actions-ssm-deploy-policy"
+  role = aws_iam_role.github_actions_deploy_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowSendCommandToDashboardInstance"
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand"
+        ]
+        Resource = [
+          aws_instance.dashboard.arn,
+          "arn:aws:ssm:${var.aws_region}::document/AWS-RunShellScript"
+        ]
+      },
+      {
+        Sid    = "AllowReadCommandResults"
+        Effect = "Allow"
+        Action = [
+          "ssm:GetCommandInvocation",
+          "ssm:ListCommandInvocations",
+          "ssm:ListCommands"
+        ]
+        Resource = "*"
+      }
+    ]
   })
 }
 

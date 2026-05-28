@@ -102,3 +102,20 @@ variable "app_health_check_request_interval" {
   type        = number
   default     = 30
 }
+variable "github_repo_owner" {
+  description = "GitHub repository owner allowed to assume the deploy role through GitHub OIDC."
+  type        = string
+  default     = "bifediora"
+}
+
+variable "github_repo_name" {
+  description = "GitHub repository name allowed to assume the deploy role through GitHub OIDC."
+  type        = string
+  default     = "durham-aws-risk-dashboard"
+}
+
+variable "github_deploy_branch" {
+  description = "GitHub branch allowed to assume the deploy role."
+  type        = string
+  default     = "main"
+}
