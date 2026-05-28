@@ -1,91 +1,132 @@
-# Current AWS Architecture Diagram
+# Final AWS Architecture
 
-## Durham Risk Intelligence Dashboard
+## Project
 
-```mermaid
-flowchart TD
-    user["User / Browser"] --> ec2public["EC2 Public IP<br/>Port 8000"]
-
-    ec2public --> fastapi["FastAPI Application<br/>Durham Risk Intelligence Dashboard"]
-
-    fastapi --> localdata["Local CSV Sample Data<br/>data/sample_arrests.csv"]
-    fastapi --> templates["Jinja2 Templates<br/>dashboard.html / index.html"]
-    fastapi --> staticassets["Static Assets<br/>CSS / JavaScript / GeoJSON"]
-
-    staticassets --> leaflet["Leaflet Map<br/>Durham Boundary / Police Beats / Arrest Points"]
-    staticassets --> charts["Chart.js Visuals<br/>District / Severity / Offenses / Hour"]
-
-    cloudwatch["CloudWatch Alarm<br/>High CPU Monitoring"] --> sns["SNS Topic<br/>Email Alert"]
-    cloudwatch --> ec2public
-
-    s3["Private S3 Artifact Bucket<br/>Screenshots / Reports / Diagrams"] -. stores project artifacts .-> screenshots["Dashboard Screenshots<br/>Portfolio Visuals"]
-
-    github["GitHub Repository<br/>Source Code / README / Docs"] -. documents and tracks .-> fastapi
-```
+Durham Risk Intelligence Dashboard
 
 ## Current Architecture Summary
 
-The current implementation is an early Phase 1 AWS deployment.
+The Durham Risk Intelligence Dashboard is deployed as a Terraform managed FastAPI application on AWS.
 
-The dashboard runs on a single Ubuntu EC2 instance and is served through a persistent `systemd` service. Public access is currently available through the EC2 public IP on port `8000`. The application reads a local CSV sample dataset and serves a FastAPI based dashboard with templates, static assets, Leaflet mapping, Chart.js analytics, and GeoJSON overlays.
+The current architecture uses a single Amazon Linux 2023 EC2 instance, Nginx as the public reverse proxy, a FastAPI application running internally on port `8000`, and a persistent `systemd` service to keep the dashboard running.
 
-CloudWatch and SNS provide basic monitoring and alerting. A private S3 bucket stores project artifacts such as screenshots, reports, and future architecture diagrams. GitHub stores the source code, documentation, and deployment notes.
+Application deployment is automated through GitHub Actions using GitHub OIDC, AWS IAM, and AWS Systems Manager. GitHub Actions does not SSH into the EC2 instance, and no SSH access was opened for GitHub hosted runners.
 
-## Current Request Flow
+Monitoring includes EC2 level CloudWatch alarms, SNS email alerting, and a Route 53 HTTP health check that monitors the public `/health` endpoint through port `80`.
+
+## Architecture Diagram
+
+```mermaid
+flowchart TD
+    user["User browser"] --> public80["EC2 public IP<br/>HTTP port 80"]
+    public80 --> nginx["Nginx reverse proxy"]
+    nginx --> fastapi["FastAPI application<br/>localhost:8000"]
+    fastapi --> systemd["systemd service<br/>durham-risk-dashboard.service"]
+    fastapi --> appdata["Dashboard routes, templates,<br/>static assets, and local project data"]
+
+    github["GitHub repository<br/>bifediora/durham-aws-risk-dashboard"] --> actions["GitHub Actions<br/>deploy.yml"]
+    actions --> oidc["GitHub OIDC<br/>AWS IAM deploy role"]
+    oidc --> ssm["AWS Systems Manager<br/>Run Command"]
+    ssm --> ec2deploy["EC2 deployment commands<br/>git pull, requirements check,<br/>systemd restart, local health check"]
+    ec2deploy --> fastapi
+
+    terraform["Terraform"] --> ec2["EC2 instance"]
+    terraform --> sg["Security group"]
+    terraform --> iam["IAM roles and instance profile"]
+    terraform --> sns["SNS topic"]
+    terraform --> cw["CloudWatch alarms"]
+    terraform --> r53["Route 53 health check"]
+
+    cw --> sns
+    r53 --> health["HTTP /health<br/>port 80"]
+    health --> nginx
+```
+
+## Public Runtime Path
 
 ```text
-User
+User browser
   ↓
-EC2 Public IP on port 8000
+EC2 public IP on HTTP port 80
   ↓
-FastAPI dashboard application
+Nginx reverse proxy
   ↓
-Local sample arrest dataset
+FastAPI application on localhost port 8000
   ↓
-Rendered dashboard, API responses, map layers, and charts
+Dashboard routes, templates, static assets, and local project data
+```
+
+## Deployment Automation Path
+
+```text
+Push to main
+  ↓
+GitHub Actions starts
+  ↓
+GitHub OIDC assumes the Terraform managed AWS IAM deploy role
+  ↓
+GitHub Actions sends an AWS Systems Manager command to EC2
+  ↓
+EC2 pulls latest code from GitHub
+  ↓
+Python requirements are checked
+  ↓
+systemd restarts durham-risk-dashboard.service
+  ↓
+Local http://localhost:8000/health check passes
+```
+
+## Monitoring Path
+
+```text
+Route 53 HTTP health check
+  ↓
+Public /health endpoint on port 80
+  ↓
+Nginx reverse proxy
+  ↓
+FastAPI /health route on localhost:8000
+  ↓
+CloudWatch HealthCheckStatus alarm
+  ↓
+SNS email alert path
 ```
 
 ## Current Supporting Services
 
 | Component | Purpose |
 |---|---|
-| EC2 | Hosts the FastAPI dashboard |
-| systemd | Keeps the application running persistently |
-| Security Group | Restricts SSH and dashboard access |
-| CloudWatch | Monitors EC2 CPU usage |
-| SNS | Sends alert notifications |
-| S3 | Stores private project artifacts |
-| GitHub | Stores project source code and documentation |
+| EC2 | Hosts the FastAPI dashboard application |
+| Nginx | Public reverse proxy on HTTP port `80` |
+| FastAPI | Internal dashboard application runtime on port `8000` |
+| systemd | Keeps the dashboard service running persistently |
+| Terraform | Manages infrastructure resources and IAM configuration |
+| Security Group | Allows public HTTP on port `80` and restricts direct app port access |
+| GitHub Actions | Automates deployment on push to `main` and manual workflow dispatch |
+| GitHub OIDC | Allows GitHub Actions to assume AWS IAM role without long-lived AWS keys |
+| AWS Systems Manager | Executes deployment commands on EC2 without GitHub runner SSH |
+| CloudWatch | Monitors EC2 and application health metrics |
+| Route 53 Health Check | Checks the public `/health` endpoint over HTTP on port `80` |
+| SNS | Sends monitoring alert notifications |
 
-## Current Limitations
+## Current Security Posture
 
-The current architecture is functional but not yet production style.
+- Public dashboard traffic enters through Nginx on port `80`.
+- FastAPI runs internally on port `8000`.
+- Public access to FastAPI port `8000` is closed in the Terraform managed security group.
+- GitHub Actions deployment does not use SSH.
+- No SSH access was opened for GitHub hosted runners.
+- GitHub OIDC is used instead of long-lived AWS access keys in GitHub.
 
-Current limitations include:
+## Current Limitations and Next Improvements
 
-- Direct public access to EC2 on port `8000`
-- No Application Load Balancer yet
-- No Auto Scaling Group yet
-- No custom VPC with public and private subnet separation yet
-- No RDS or managed database layer yet
-- Manual deployment process
-- Infrastructure is not yet managed with Terraform
-- CI/CD pipeline has not been added yet
+The current architecture is a portfolio-ready single-instance deployment, not a multi-AZ production architecture.
 
-## Next Target Architecture Direction
+Potential future improvements include:
 
-The next major AWS architecture improvement is to place the application behind an Application Load Balancer.
-
-The longer term target is:
-
-```text
-User
-  ↓
-Application Load Balancer
-  ↓
-EC2 application instances
-  ↓
-Private data layer or structured storage
-  ↓
-S3 artifacts, monitoring, Terraform, and CI/CD
-```
+- HTTPS and domain setup.
+- Route 53 DNS record for a named dashboard URL.
+- CloudWatch log forwarding.
+- Deployment notifications.
+- Broader workflow test gates.
+- Optional AMI baking or a more formal release process.
