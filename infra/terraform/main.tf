@@ -89,6 +89,12 @@ resource "aws_instance" "dashboard" {
   user_data                   = file("${path.module}/../scripts/ec2_bootstrap.sh")
   user_data_replace_on_change = true
 
+  lifecycle {
+    ignore_changes = [
+      ami
+    ]
+  }
+
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-ec2"
   })
@@ -154,5 +160,42 @@ resource "aws_cloudwatch_metric_alarm" "dashboard_high_cpu" {
 
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-ec2-high-cpu"
+  })
+}
+
+resource "aws_route53_health_check" "dashboard_app_health" {
+  ip_address        = aws_instance.dashboard.public_ip
+  port              = var.http_port
+  type              = "HTTP"
+  resource_path     = var.app_health_check_path
+  failure_threshold = var.app_health_check_failure_threshold
+  request_interval  = var.app_health_check_request_interval
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-app-health-check"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "dashboard_app_health_failed" {
+  alarm_name          = "${local.name_prefix}-app-health-check-failed"
+  alarm_description   = "Triggers when the dashboard application health endpoint fails Route 53 health checks."
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HealthCheckStatus"
+  namespace           = "AWS/Route53"
+  period              = 60
+  statistic           = "Minimum"
+  threshold           = 1
+  treat_missing_data  = "breaching"
+
+  dimensions = {
+    HealthCheckId = aws_route53_health_check.dashboard_app_health.id
+  }
+
+  alarm_actions = [aws_sns_topic.dashboard_alerts.arn]
+  ok_actions    = [aws_sns_topic.dashboard_alerts.arn]
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-app-health-check-failed"
   })
 }

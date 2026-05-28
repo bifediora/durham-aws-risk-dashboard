@@ -84,3 +84,21 @@ variable "cpu_alarm_evaluation_periods" {
   type        = number
   default     = 2
 }
+
+variable "app_health_check_path" {
+  description = "HTTP path used by Route 53 to check dashboard application health."
+  type        = string
+  default     = "/health"
+}
+
+variable "app_health_check_failure_threshold" {
+  description = "Number of consecutive failed Route 53 health checks before the endpoint is considered unhealthy."
+  type        = number
+  default     = 3
+}
+
+variable "app_health_check_request_interval" {
+  description = "Route 53 health check request interval in seconds. Valid values are 10 or 30."
+  type        = number
+  default     = 30
+}

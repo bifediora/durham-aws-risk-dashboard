@@ -16,7 +16,7 @@ The AWS provider configuration, input variables, EC2 resource, security group re
 
 This Terraform managed environment is separate from the original manually created AWS deployment, which remains the working reference architecture while the Infrastructure as Code version is built incrementally.
 
-Terraform now passes a bootstrap script to the EC2 instance through `user_data`. The bootstrap process configures the application runtime, `systemd` service, and Nginx reverse proxy when a new instance is created. Terraform currently manages the infrastructure foundation, security group rules, EC2 bootstrap handoff, SNS topic, and CloudWatch alarms.
+Terraform now passes a bootstrap script to the EC2 instance through `user_data`. The bootstrap process configures the application runtime, `systemd` service, and Nginx reverse proxy when a new instance is created. Terraform currently manages the infrastructure foundation, security group rules, EC2 bootstrap handoff, SNS topic, CloudWatch alarms, and Route 53 application health check.
 
 Public dashboard traffic enters through Nginx on HTTP port `80`. The FastAPI application runs internally on port `8000` behind Nginx, and port `8000` is no longer exposed publicly through the Terraform managed security group. This is a security hardening step that keeps direct application server access off the public internet.
 
@@ -45,6 +45,7 @@ Implemented resources and configuration:
 - Internal FastAPI application port behind Nginx
 - SNS topic
 - CloudWatch alarms
+- Route 53 application health check
 - Project tags
 - Outputs for public IP and app URL
 
@@ -175,6 +176,36 @@ StatusCheckFailed: OK
 
 Future monitoring improvements may include application health check monitoring, log forwarding, a CloudWatch dashboard, and notification refinement.
 
+## Application Health Monitoring Checkpoint
+
+Terraform now manages application-level health monitoring for the public dashboard endpoint.
+
+Managed application health resources:
+
+- Route 53 health check: `db6f0811-3d67-4773-80fa-4543012b273d`
+- CloudWatch alarm: `durham-risk-dashboard-dev-app-health-check-failed`
+
+Health check target:
+
+```text
+Type: HTTP
+IP address: 54.242.183.123
+Port: 80
+Resource path: /health
+```
+
+CloudWatch alarms on the Route 53 `HealthCheckStatus` metric. Alert notifications reuse the existing Terraform managed dashboard SNS alerts topic.
+
+Current application health alarm state:
+
+```text
+OK
+```
+
+The health check monitors the public Nginx endpoint on port `80`. FastAPI continues to run internally on port `8000` behind Nginx, and public users should not access the FastAPI port directly.
+
+The EC2 instance resource also uses `lifecycle ignore_changes` for `ami` so changes to the latest Amazon Linux 2023 AMI do not unintentionally replace the dashboard instance.
+
 ## Current Terraform Outputs
 
 The workspace currently exposes these outputs:
@@ -242,7 +273,7 @@ Future Terraform expansion may include:
 | File | Purpose |
 |---|---|
 | `main.tf` | Defines the Terraform version constraint, AWS provider requirement, provider region, EC2 instance, security group, and AMI lookup |
-| `variables.tf` | Defines input variables for AWS region, project metadata, EC2 configuration, key pair, SSH CIDR, and application port |
+| `variables.tf` | Defines input variables for AWS region, project metadata, EC2 configuration, key pair, SSH CIDR, application port, and application health monitoring |
 | `outputs.tf` | Defines outputs for instance ID, public IP, public DNS, security group ID, dashboard URL, and SSH command |
 | `terraform.tfvars.example` | Provides example variable values for future local Terraform runs |
 | `.terraform.lock.hcl` | Locks provider dependency versions after `terraform init` |

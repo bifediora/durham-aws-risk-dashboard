@@ -92,3 +92,14 @@ The next phase will focus on repeatable AWS infrastructure for hosting the dashb
 - Later extend to monitoring resources such as CloudWatch alarms and SNS notifications.
 
 The first Terraform version should remain simple, readable, and reproducible.
+
+## Phase 6 Operations Update
+
+The Terraform managed AWS deployment now includes EC2 infrastructure, security group hardening, Nginx public access on port `80`, internal FastAPI runtime on port `8000`, SNS alerting, CloudWatch infrastructure alarms, and Route 53 application health monitoring.
+
+Current monitoring distinguishes between:
+
+- EC2-level health: CPU utilization and EC2 status checks.
+- Application-level health: Route 53 HTTP health check against `/health` on port `80`, with CloudWatch alarm evaluation on `HealthCheckStatus`.
+
+Alert notifications reuse the existing SNS topic. Terraform also includes an EC2 `ami` lifecycle ignore rule to avoid unintended instance replacement when the latest Amazon Linux 2023 AMI changes.

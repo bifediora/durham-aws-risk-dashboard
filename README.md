@@ -166,11 +166,22 @@ http://54.242.183.123/health
 
 ## Monitoring Status
 
-The Terraform managed deployment now includes basic CloudWatch monitoring for the EC2 host. Current monitored signals include EC2 CPU utilization and EC2 status checks.
+The Terraform managed deployment now includes CloudWatch monitoring for the EC2 host and application health monitoring for the public dashboard endpoint.
 
-Alerts are routed through a Terraform managed SNS topic with a confirmed email notification subscription. The current CloudWatch alarm states are `OK`.
+Infrastructure monitoring covers EC2 CPU utilization and EC2 status checks. Application health monitoring uses a Route 53 HTTP health check against the public `/health` endpoint on port `80`, with a CloudWatch alarm on the Route 53 `HealthCheckStatus` metric.
 
-This improves operational readiness by adding infrastructure health visibility and alerting for the public dashboard deployment.
+Alerts are routed through the existing Terraform managed SNS topic with a confirmed email notification subscription. Current monitoring shows the application health alarm in `OK` state.
+
+Public application access remains through Nginx on port `80`, while FastAPI runs internally on port `8000` behind Nginx:
+
+```text
+http://54.242.183.123
+http://54.242.183.123/health
+```
+
+Terraform also uses `lifecycle ignore_changes` on the EC2 `ami` field to avoid unintended instance replacement when the latest Amazon Linux 2023 AMI changes.
+
+This improves operational readiness by monitoring both EC2-level health and the public application endpoint.
 
 ## Current AWS Architecture
 

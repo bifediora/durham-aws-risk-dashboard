@@ -1537,3 +1537,91 @@ The Terraform managed deployment now separates the public web entry point from t
 #### Next step
 
 The next likely improvements are application health monitoring, CI/CD, Route 53, or HTTPS. Do not proceed to those items until this security hardening checkpoint is reviewed.
+
+### Application Health Monitoring with Route 53 and CloudWatch
+
+#### Purpose
+
+Documented the completed application health monitoring milestone for the Terraform managed dashboard deployment. This milestone adds monitoring for the public FastAPI health endpoint as seen through Nginx, complementing the existing EC2-level infrastructure alarms.
+
+#### Work completed
+
+- Added Terraform variables for application health monitoring:
+  - `app_health_check_path`
+  - `app_health_check_failure_threshold`
+  - `app_health_check_request_interval`
+- Added a Terraform managed Route 53 HTTP health check for the public `/health` endpoint.
+- Added a Terraform managed CloudWatch alarm for Route 53 `HealthCheckStatus`.
+- Reused the existing dashboard SNS alerts topic for health check alert notifications.
+- Added `lifecycle ignore_changes` for `ami` in the `aws_instance.dashboard` resource to avoid unintended EC2 replacement when the latest Amazon Linux 2023 AMI changes.
+- Confirmed Terraform plan:
+
+```text
+Plan: 2 to add, 0 to change, 0 to destroy
+```
+
+- Applied Terraform successfully:
+
+```text
+Resources: 2 added, 0 changed, 0 destroyed
+```
+
+#### Monitoring resources created
+
+Route 53 health check:
+
+```text
+Health Check ID: db6f0811-3d67-4773-80fa-4543012b273d
+Type: HTTP
+IP address: 54.242.183.123
+Port: 80
+Resource path: /health
+```
+
+CloudWatch alarm:
+
+```text
+durham-risk-dashboard-dev-app-health-check-failed
+Metric: HealthCheckStatus
+State: OK
+```
+
+#### Monitoring coverage
+
+Current monitoring now includes:
+
+- EC2 high CPU utilization alarm.
+- EC2 status check failed alarm.
+- Application-level `/health` endpoint monitoring through Route 53.
+- SNS email alert path through the existing dashboard alerts topic.
+
+#### Validation completed
+
+- Terraform apply completed successfully.
+- Route 53 health check was created.
+- CloudWatch alarm was created and confirmed in `OK` state.
+- Dashboard health endpoint returned:
+
+```json
+{"status":"healthy","service":"Durham Risk Intelligence Dashboard","version":"0.3.6"}
+```
+
+Current public dashboard URL:
+
+```text
+http://54.242.183.123
+```
+
+Current public health check URL:
+
+```text
+http://54.242.183.123/health
+```
+
+#### Current status
+
+The Terraform managed deployment now monitors both EC2 infrastructure health and the public application health endpoint. Public application access remains through Nginx on port `80`, while FastAPI continues to run internally on port `8000` behind Nginx.
+
+#### Next step
+
+Future improvements may include log forwarding, a CloudWatch dashboard, notification refinement, CI/CD, Route 53 DNS, or HTTPS. Do not proceed to those items until this application health monitoring checkpoint is reviewed.
