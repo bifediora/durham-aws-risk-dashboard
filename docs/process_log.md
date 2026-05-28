@@ -1452,3 +1452,88 @@ This reduces manual setup risk and strengthens the project as an Infrastructure 
 #### Next step
 
 The next likely improvements are CI/CD, a dedicated deployment script, AMI baking, SSM based management, HTTPS, or Route 53. Do not proceed to CI/CD, Route 53, HTTPS, or application health monitoring until this bootstrap automation checkpoint is reviewed.
+
+### Restrict Public Access to FastAPI App Port
+
+#### Purpose
+
+Documented the security hardening milestone that restricts public dashboard traffic to Nginx on standard HTTP port `80` and keeps the FastAPI application port internal.
+
+#### Problem addressed
+
+After Nginx became the public reverse proxy, the Terraform managed security group still allowed public inbound access to FastAPI on port `8000`. That direct public path was no longer needed and weakened the intended deployment pattern.
+
+Port `8000` should remain an internal application runtime port. Public users should access the dashboard through Nginx only.
+
+#### Work completed
+
+- Removed public inbound security group access to port `8000`.
+- Preserved public HTTP access through Nginx on port `80`.
+- Kept FastAPI running internally on port `8000` behind Nginx.
+- Updated the public dashboard URL output to remove `:8000`.
+- Added a Terraform output documenting the internal FastAPI application port.
+- Applied the Terraform security group update successfully.
+
+#### Terraform security group change
+
+Removed public inbound access to:
+
+```text
+tcp/8000
+```
+
+Kept public inbound access to:
+
+```text
+tcp/80
+```
+
+Intended access pattern:
+
+```text
+Public user
+  -> port 80
+  -> Nginx
+  -> 127.0.0.1:8000
+  -> FastAPI
+```
+
+Terraform apply result:
+
+```text
+Resources: 0 added, 1 changed, 0 destroyed.
+```
+
+#### Updated outputs
+
+```text
+dashboard_app_url = "http://54.242.183.123"
+dashboard_internal_app_port = 8000
+```
+
+#### Validation completed
+
+- Terraform apply completed successfully.
+- The public dashboard URL now points to Nginx without `:8000`.
+- The internal FastAPI port remains documented as `dashboard_internal_app_port`.
+- The security group no longer exposes port `8000` publicly.
+
+Current public dashboard URL:
+
+```text
+http://54.242.183.123
+```
+
+Current public health check URL:
+
+```text
+http://54.242.183.123/health
+```
+
+#### Current status
+
+The Terraform managed deployment now separates the public web entry point from the internal application runtime. Nginx is the public web entry point on port `80`, and FastAPI runs internally on port `8000`.
+
+#### Next step
+
+The next likely improvements are application health monitoring, CI/CD, Route 53, or HTTPS. Do not proceed to those items until this security hardening checkpoint is reviewed.

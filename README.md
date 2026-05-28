@@ -104,7 +104,7 @@ The project now includes a Terraform managed AWS infrastructure foundation in `i
 
 Terraform currently provisions a clean EC2 instance and security group for the Durham Risk Intelligence Dashboard. This Terraform environment is separate from the original manually created AWS deployment, which remains the working reference architecture.
 
-The purpose of the Terraform foundation is to make the dashboard infrastructure reproducible, reviewable, and easier to extend in later phases. The first completed checkpoint includes EC2 provisioning, security group configuration, restricted SSH access, dashboard application port access, and operational outputs for instance and connection details.
+The purpose of the Terraform foundation is to make the dashboard infrastructure reproducible, reviewable, and easier to extend in later phases. The first completed checkpoint includes EC2 provisioning, security group configuration, restricted SSH access, public HTTP access through Nginx, and operational outputs for instance and connection details.
 
 ## Terraform Managed Deployment Status
 
@@ -125,6 +125,24 @@ http://54.242.183.123/health
 ```
 
 The next planned improvement is likely CI/CD, HTTPS/domain setup, or expanded monitoring for the Terraform managed deployment.
+
+## Security Hardening Status
+
+The dashboard is now publicly served through Nginx on standard HTTP port `80`. FastAPI continues to run internally on port `8000` behind Nginx.
+
+Public access to port `8000` has been removed from the Terraform managed security group. This improves the deployment pattern by separating the public web entry point from the internal application runtime.
+
+Current public dashboard URL:
+
+```text
+http://54.242.183.123
+```
+
+Current health check URL:
+
+```text
+http://54.242.183.123/health
+```
 
 ## Deployment Automation Status
 

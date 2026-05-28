@@ -183,9 +183,29 @@ The workspace currently exposes these outputs:
 - `dashboard_public_ip`
 - `dashboard_public_dns`
 - `dashboard_security_group_id`
-- `dashboard_app_url`
-- `dashboard_internal_app_port`
+- `dashboard_app_url`: public Nginx URL without `:8000`
+- `dashboard_internal_app_port`: internal FastAPI port behind Nginx
 - `dashboard_ssh_command`
+
+## Security Hardening Checkpoint
+
+Terraform now manages the security group rule that allows public HTTP traffic on port `80`.
+
+Terraform no longer exposes port `8000` publicly. The `app_port` variable remains defined because FastAPI still uses port `8000` internally behind Nginx.
+
+The public dashboard output now points to the Nginx URL:
+
+```text
+dashboard_app_url = "http://54.242.183.123"
+```
+
+The internal FastAPI port is documented separately:
+
+```text
+dashboard_internal_app_port = 8000
+```
+
+This is a security hardening step. Public users should access the dashboard through Nginx on port `80`; direct public access to the FastAPI runtime should remain closed.
 
 ## Future Expansion
 
