@@ -56,7 +56,7 @@ variable "http_port" {
 }
 
 variable "app_port" {
-  description = "Application port used internally by the FastAPI dashboard."
+  description = "Application port used internally by the FastAPI dashboard behind Nginx."
   type        = number
   default     = 8000
 }

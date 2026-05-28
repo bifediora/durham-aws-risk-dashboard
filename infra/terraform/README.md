@@ -18,6 +18,8 @@ This Terraform managed environment is separate from the original manually create
 
 Terraform now passes a bootstrap script to the EC2 instance through `user_data`. The bootstrap process configures the application runtime, `systemd` service, and Nginx reverse proxy when a new instance is created. Terraform currently manages the infrastructure foundation, security group rules, EC2 bootstrap handoff, SNS topic, and CloudWatch alarms.
 
+Public dashboard traffic enters through Nginx on HTTP port `80`. The FastAPI application runs internally on port `8000` behind Nginx, and port `8000` is no longer exposed publicly through the Terraform managed security group. This is a security hardening step that keeps direct application server access off the public internet.
+
 ## Terraform Strategy
 
 The selected Terraform strategy is:
@@ -39,7 +41,8 @@ Implemented resources and configuration:
 - EC2 instance
 - Security group
 - SSH access configuration
-- HTTP or application port access
+- Public HTTP access through Nginx on port `80`
+- Internal FastAPI application port behind Nginx
 - SNS topic
 - CloudWatch alarms
 - Project tags
@@ -96,6 +99,8 @@ The bootstrap process now configures:
 - Nginx reverse proxy configuration.
 - Startup and enablement for both the dashboard service and Nginx.
 
+FastAPI is configured to run internally on port `8000`, while Nginx handles public web traffic on port `80`.
+
 Terraform also uses `user_data_replace_on_change` so bootstrap script changes intentionally recreate the EC2 instance. This makes replacement behavior explicit and keeps the deployment recoverable.
 
 This milestone reduced manual setup risk. If Terraform replaces the EC2 instance, the dashboard runtime can now be recreated automatically instead of relying on manual server configuration.
@@ -134,7 +139,7 @@ Nginx configuration path on the EC2 instance:
 /etc/nginx/conf.d/durham-risk-dashboard.conf
 ```
 
-Terraform now manages the security group rule that allows inbound HTTP traffic on port `80`. The reverse proxy configuration itself was performed manually as part of the hybrid learning approach.
+Terraform manages the security group rule that allows inbound HTTP traffic on port `80`. Public inbound access to port `8000` is intentionally closed; FastAPI remains reachable internally through `127.0.0.1:8000` behind Nginx.
 
 Current health check URL:
 
@@ -179,6 +184,7 @@ The workspace currently exposes these outputs:
 - `dashboard_public_dns`
 - `dashboard_security_group_id`
 - `dashboard_app_url`
+- `dashboard_internal_app_port`
 - `dashboard_ssh_command`
 
 ## Future Expansion

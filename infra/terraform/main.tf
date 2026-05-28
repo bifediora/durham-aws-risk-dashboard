@@ -67,14 +67,6 @@ resource "aws_security_group" "dashboard_ec2" {
     cidr_blocks = [var.allowed_app_cidr]
   }
 
-  ingress {
-    description = "Allow dashboard application traffic"
-    from_port   = var.app_port
-    to_port     = var.app_port
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_app_cidr]
-  }
-
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0

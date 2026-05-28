@@ -37,8 +37,13 @@ output "dashboard_security_group_id" {
 }
 
 output "dashboard_app_url" {
-  description = "Application URL for the dashboard FastAPI service once the app is running."
-  value       = "http://${aws_instance.dashboard.public_ip}:${var.app_port}"
+  description = "Public dashboard URL served through Nginx on HTTP port 80."
+  value       = "http://${aws_instance.dashboard.public_ip}"
+}
+
+output "dashboard_internal_app_port" {
+  description = "Internal FastAPI application port used behind Nginx."
+  value       = var.app_port
 }
 
 output "dashboard_ssh_command" {
