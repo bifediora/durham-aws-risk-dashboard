@@ -94,6 +94,9 @@ resource "aws_instance" "dashboard" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.dashboard_ec2.id]
 
+  user_data                   = file("${path.module}/../scripts/ec2_bootstrap.sh")
+  user_data_replace_on_change = true
+
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-ec2"
   })
