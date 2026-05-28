@@ -95,7 +95,7 @@ The first Terraform version should remain simple, readable, and reproducible.
 
 ## Phase 6 Operations Update
 
-The Terraform managed AWS deployment now includes EC2 infrastructure, security group hardening, Nginx public access on port `80`, internal FastAPI runtime on port `8000`, SNS alerting, CloudWatch infrastructure alarms, and Route 53 application health monitoring.
+The Terraform managed AWS deployment now includes EC2 infrastructure, security group hardening, Nginx public access on port `80`, internal FastAPI runtime on port `8000`, SNS alerting, CloudWatch infrastructure alarms, Route 53 application health monitoring, SSM deployment command support, and GitHub Actions deployment automation.
 
 Current monitoring distinguishes between:
 
@@ -103,3 +103,5 @@ Current monitoring distinguishes between:
 - Application-level health: Route 53 HTTP health check against `/health` on port `80`, with CloudWatch alarm evaluation on `HealthCheckStatus`.
 
 Alert notifications reuse the existing SNS topic. Terraform also includes an EC2 `ami` lifecycle ignore rule to avoid unintended instance replacement when the latest Amazon Linux 2023 AMI changes.
+
+Deployment automation now uses GitHub Actions with AWS OIDC and SSM. The workflow does not SSH into EC2 and does not require long-lived AWS access keys in GitHub. On push to `main`, the workflow assumes the Terraform managed deploy role, sends an SSM command to EC2, pulls the latest code, restarts the FastAPI `systemd` service, and validates the local `/health` endpoint.

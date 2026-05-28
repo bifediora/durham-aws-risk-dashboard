@@ -1625,3 +1625,107 @@ The Terraform managed deployment now monitors both EC2 infrastructure health and
 #### Next step
 
 Future improvements may include log forwarding, a CloudWatch dashboard, notification refinement, CI/CD, Route 53 DNS, or HTTPS. Do not proceed to those items until this application health monitoring checkpoint is reviewed.
+
+### GitHub Actions Deployment Automation with OIDC and SSM
+
+#### Purpose
+
+Documented the completed GitHub Actions deployment automation milestone for the Terraform managed dashboard deployment. This milestone moves the project from manually triggered EC2 deployment steps toward automated cloud deployment using GitHub Actions, AWS IAM identity federation, and AWS Systems Manager.
+
+#### Work completed
+
+- Added SSM support to the Terraform managed EC2 instance.
+- Added a GitHub Actions OIDC deploy role through Terraform.
+- Added a GitHub Actions deployment workflow:
+
+```text
+.github/workflows/deploy.yml
+```
+
+- Confirmed the GitHub Actions workflow ran successfully.
+- Confirmed the SSM managed instance was online.
+- Confirmed the SSM deployment test succeeded.
+- Confirmed the workflow restarted the FastAPI `systemd` service and validated the local health endpoint.
+
+#### Deployment architecture
+
+The deployment flow is:
+
+```text
+Push to main
+  -> GitHub Actions starts
+  -> GitHub OIDC assumes AWS IAM deploy role
+  -> GitHub Actions sends AWS SSM command to EC2
+  -> EC2 pulls latest code from GitHub
+  -> Python requirements are checked
+  -> systemd restarts durham-risk-dashboard.service
+  -> local /health check passes
+```
+
+GitHub Actions does not SSH into the EC2 instance. No EC2 SSH port access was opened for GitHub runners. AWS Systems Manager is used for deployment command execution, and GitHub OIDC is used instead of storing long-lived AWS access keys in GitHub.
+
+#### Terraform resources added
+
+SSM support:
+
+```text
+aws_iam_role.dashboard_ec2_ssm_role
+aws_iam_role_policy_attachment.dashboard_ec2_ssm_core
+aws_iam_instance_profile.dashboard_ec2_ssm_profile
+iam_instance_profile attached to aws_instance.dashboard
+```
+
+GitHub Actions OIDC:
+
+```text
+aws_iam_openid_connect_provider.github_actions
+aws_iam_role.github_actions_deploy_role
+aws_iam_role_policy.github_actions_ssm_deploy_policy
+```
+
+#### Confirmed deployment details
+
+```text
+EC2 instance ID: i-0998e40b915d53346
+EC2 service name: durham-risk-dashboard.service
+EC2 deploy path: /home/ec2-user/durham-aws-risk-dashboard
+GitHub repo: bifediora/durham-aws-risk-dashboard
+AWS region: us-east-1
+GitHub Actions deploy role: arn:aws:iam::333973504198:role/durham-risk-dashboard-dev-github-actions-deploy-role
+```
+
+#### Workflow behavior
+
+- Triggers on push to `main`.
+- Supports manual `workflow_dispatch`.
+- Uses `aws-actions/configure-aws-credentials` with OIDC.
+- Sends `AWS-RunShellScript` through SSM.
+- Runs deployment commands on EC2.
+- Restarts `durham-risk-dashboard.service`.
+- Verifies `http://localhost:8000/health` on the EC2 instance.
+
+#### Validation completed
+
+- SSM managed instance was confirmed online.
+- SSM deployment command succeeded.
+- GitHub Actions deployment workflow succeeded.
+- Local EC2 health check passed after service restart.
+
+Confirmed commits:
+
+```text
+447739e Add GitHub Actions SSM deployment workflow
+a6929a9 Add GitHub Actions OIDC deploy role
+20c00c1 Add SSM support for EC2 deployment
+b8f658b Add application health monitoring
+```
+
+#### Current status
+
+The project now has a working deployment automation path from GitHub to EC2 without SSH from GitHub runners and without long-lived AWS access keys in GitHub. Public traffic remains served through Nginx on port `80`, and FastAPI remains internal on port `8000`.
+
+This milestone demonstrates CI/CD fundamentals, identity federation, least privilege IAM design, AWS Systems Manager command execution, and service-level health validation.
+
+#### Next step
+
+Future improvements may include deployment notifications, richer workflow status reporting, log forwarding, HTTPS, Route 53 DNS, or broader test gates. Do not proceed to those items until this GitHub Actions deployment automation checkpoint is reviewed.

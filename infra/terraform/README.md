@@ -16,7 +16,7 @@ The AWS provider configuration, input variables, EC2 resource, security group re
 
 This Terraform managed environment is separate from the original manually created AWS deployment, which remains the working reference architecture while the Infrastructure as Code version is built incrementally.
 
-Terraform now passes a bootstrap script to the EC2 instance through `user_data`. The bootstrap process configures the application runtime, `systemd` service, and Nginx reverse proxy when a new instance is created. Terraform currently manages the infrastructure foundation, security group rules, EC2 bootstrap handoff, SNS topic, CloudWatch alarms, and Route 53 application health check.
+Terraform now passes a bootstrap script to the EC2 instance through `user_data`. The bootstrap process configures the application runtime, `systemd` service, and Nginx reverse proxy when a new instance is created. Terraform currently manages the infrastructure foundation, security group rules, EC2 bootstrap handoff, SSM instance access, GitHub Actions OIDC deployment role, SNS topic, CloudWatch alarms, and Route 53 application health check.
 
 Public dashboard traffic enters through Nginx on HTTP port `80`. The FastAPI application runs internally on port `8000` behind Nginx, and port `8000` is no longer exposed publicly through the Terraform managed security group. This is a security hardening step that keeps direct application server access off the public internet.
 
@@ -46,6 +46,8 @@ Implemented resources and configuration:
 - SNS topic
 - CloudWatch alarms
 - Route 53 application health check
+- SSM support for EC2 deployment commands
+- GitHub Actions OIDC deployment role
 - Project tags
 - Outputs for public IP and app URL
 
@@ -206,6 +208,61 @@ The health check monitors the public Nginx endpoint on port `80`. FastAPI contin
 
 The EC2 instance resource also uses `lifecycle ignore_changes` for `ami` so changes to the latest Amazon Linux 2023 AMI do not unintentionally replace the dashboard instance.
 
+## GitHub Actions Deployment Automation Checkpoint
+
+Terraform now supports GitHub Actions deployment automation through AWS IAM OIDC and AWS Systems Manager.
+
+Workflow file:
+
+```text
+.github/workflows/deploy.yml
+```
+
+Deployment flow:
+
+```text
+Push to main
+  -> GitHub Actions starts
+  -> GitHub OIDC assumes AWS IAM deploy role
+  -> GitHub Actions sends AWS SSM command to EC2
+  -> EC2 pulls latest code from GitHub
+  -> Python requirements are checked
+  -> systemd restarts durham-risk-dashboard.service
+  -> local /health check passes
+```
+
+GitHub Actions does not SSH into the EC2 instance. No EC2 SSH port access was opened for GitHub runners. GitHub OIDC is used instead of long-lived AWS access keys in GitHub, and AWS Systems Manager is used for deployment command execution.
+
+Terraform resources for SSM support:
+
+```text
+aws_iam_role.dashboard_ec2_ssm_role
+aws_iam_role_policy_attachment.dashboard_ec2_ssm_core
+aws_iam_instance_profile.dashboard_ec2_ssm_profile
+iam_instance_profile attached to aws_instance.dashboard
+```
+
+Terraform resources for GitHub Actions OIDC:
+
+```text
+aws_iam_openid_connect_provider.github_actions
+aws_iam_role.github_actions_deploy_role
+aws_iam_role_policy.github_actions_ssm_deploy_policy
+```
+
+Confirmed deployment details:
+
+```text
+EC2 instance ID: i-0998e40b915d53346
+EC2 service name: durham-risk-dashboard.service
+EC2 deploy path: /home/ec2-user/durham-aws-risk-dashboard
+GitHub repo: bifediora/durham-aws-risk-dashboard
+AWS region: us-east-1
+GitHub Actions deploy role: arn:aws:iam::333973504198:role/durham-risk-dashboard-dev-github-actions-deploy-role
+```
+
+The SSM managed instance was confirmed online, the SSM deployment test succeeded, and the GitHub Actions deployment workflow succeeded.
+
 ## Current Terraform Outputs
 
 The workspace currently exposes these outputs:
@@ -267,6 +324,8 @@ Future Terraform expansion may include:
 - AMI baking
 - SSM based management
 - GitHub Actions deployment integration
+- Deployment notifications
+- Workflow status reporting
 
 ## Current Files
 
@@ -278,6 +337,7 @@ Future Terraform expansion may include:
 | `terraform.tfvars.example` | Provides example variable values for future local Terraform runs |
 | `.terraform.lock.hcl` | Locks provider dependency versions after `terraform init` |
 | `../scripts/ec2_bootstrap.sh` | Bootstraps the EC2 application runtime, `systemd` service, and Nginx reverse proxy through Terraform `user_data` |
+| `../../.github/workflows/deploy.yml` | Runs GitHub Actions deployment through OIDC-authenticated SSM command execution |
 
 ## Usage Commands
 
@@ -302,4 +362,4 @@ Review `terraform plan` before running `terraform apply`.
 
 ## Next Step
 
-The next likely improvements are CI/CD, a dedicated deployment script, AMI baking, SSM based management, HTTPS, or domain setup for the Terraform managed deployment. Future work should build on the current `user_data` bootstrap foundation.
+The next likely improvements are deployment notifications, workflow status reporting, log forwarding, HTTPS, or domain setup for the Terraform managed deployment. Future work should build on the current `user_data` bootstrap and GitHub Actions SSM deployment foundation.

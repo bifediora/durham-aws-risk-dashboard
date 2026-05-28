@@ -146,11 +146,17 @@ http://54.242.183.123/health
 
 ## Deployment Automation Status
 
-The Terraform deployment now uses an EC2 bootstrap script connected through `user_data`.
+The Terraform deployment uses an EC2 bootstrap script connected through `user_data`.
 
 The bootstrap process recreates the dashboard runtime automatically when a new EC2 instance is created. It installs system dependencies, clones the project repository, creates the Python 3.11 virtual environment, installs application dependencies, configures the FastAPI `systemd` service, and configures Nginx as the public reverse proxy.
 
-This improves reproducibility and reduces manual setup risk if Terraform replaces the EC2 instance. It also strengthens the project's Infrastructure as Code and cloud engineering portfolio value.
+The project also includes a GitHub Actions deployment workflow at `.github/workflows/deploy.yml`. On push to `main`, or manual `workflow_dispatch`, GitHub Actions uses OIDC to assume a Terraform managed AWS IAM deploy role and sends an AWS Systems Manager command to the EC2 instance.
+
+GitHub Actions does not SSH into EC2, and no EC2 SSH access was opened for GitHub runners. The workflow uses SSM command execution and avoids storing long-lived AWS access keys in GitHub.
+
+The workflow pulls the latest code on EC2, checks Python requirements, restarts `durham-risk-dashboard.service`, and validates `http://localhost:8000/health`. The GitHub Actions deployment workflow was successfully tested.
+
+This improves reproducibility and reduces manual setup risk if Terraform replaces the EC2 instance. It also demonstrates CI/CD fundamentals, identity federation, least privilege IAM design, AWS Systems Manager command execution, and service-level health validation.
 
 Current public dashboard URL:
 
