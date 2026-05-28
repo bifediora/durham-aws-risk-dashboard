@@ -80,11 +80,47 @@ resource "aws_security_group" "dashboard_ec2" {
   })
 }
 
+resource "aws_iam_role" "dashboard_ec2_ssm_role" {
+  name = "${local.name_prefix}-ec2-ssm-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-ec2-ssm-role"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "dashboard_ec2_ssm_core" {
+  role       = aws_iam_role.dashboard_ec2_ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "dashboard_ec2_ssm_profile" {
+  name = "${local.name_prefix}-ec2-ssm-profile"
+  role = aws_iam_role.dashboard_ec2_ssm_role.name
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-ec2-ssm-profile"
+  })
+}
+
 resource "aws_instance" "dashboard" {
   ami                    = data.aws_ami.amazon_linux_2023.id
   instance_type          = var.instance_type
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.dashboard_ec2.id]
+  iam_instance_profile   = aws_iam_instance_profile.dashboard_ec2_ssm_profile.name
 
   user_data                   = file("${path.module}/../scripts/ec2_bootstrap.sh")
   user_data_replace_on_change = true
