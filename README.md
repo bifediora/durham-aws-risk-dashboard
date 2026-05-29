@@ -84,6 +84,16 @@ The dashboard should remain stable as a portfolio MVP. Current work has shifted 
 
 The current deployment uses a Terraform managed EC2 instance with Nginx as the public web entry point and FastAPI running internally.
 
+The schematic below shows the current runtime path, deployment automation path, and monitoring/alerting path.
+
+![Final AWS architecture schematic](artifacts/diagrams/final_aws_architecture.png)
+
+High resolution version for portfolio or presentation use:
+
+```text
+artifacts/diagrams/final_aws_architecture_highres.png
+```
+
 ```text
 User browser
   ↓
