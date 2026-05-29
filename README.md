@@ -193,21 +193,17 @@ The Route 53 health check reaches the application through the public Nginx endpo
 
 ## Screenshots
 
-Screenshot artifacts are stored outside Git tracking and may be used for portfolio presentation material.
+### Dashboard Summary
 
-Local screenshot folder:
+![Dashboard summary](artifacts/screenshots/dashboard_top_summary.png)
 
-```text
-artifacts/screenshots/
-```
+### Map Layers and Spatial View
 
-Example screenshot artifact names:
+![Dashboard map layers](artifacts/screenshots/dashboard_map_layers.png)
 
-```text
-dashboard_top_summary.png
-dashboard_map_layers.png
-dashboard_analytics_charts.png
-```
+### Analytical Charts
+
+![Dashboard analytical charts](artifacts/screenshots/dashboard_analytic_charts.png)
 
 ## Repository Structure
 
