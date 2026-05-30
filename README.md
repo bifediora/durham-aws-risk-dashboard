@@ -1,90 +1,33 @@
 # Durham Risk Intelligence Dashboard
 
-## Project Overview
+The Durham Risk Intelligence Dashboard is a cloud deployed geospatial analytics application for exploring Durham public safety event data through interactive maps, KPI summaries, and analytical visualizations.
 
-The Durham Risk Intelligence Dashboard is a FastAPI based geospatial analytics application deployed on AWS as a cloud engineering portfolio project.
+The project demonstrates how a local FastAPI dashboard can be matured into a production style AWS deployment using Terraform, Nginx, CloudWatch, SNS, Route 53 health checks, GitHub Actions, OIDC, and AWS Systems Manager.
 
-The dashboard combines Durham public safety event data, census tract analytics, ACS demographic context, municipal geography, neighborhood reference layers, and interactive map/chart views. It is framed as a public-facing risk intelligence, preparedness, and resilience interpretation prototype, not as an enforcement prediction tool.
+It is designed as a portfolio project that connects geospatial intelligence, public safety analytics, cloud infrastructure, and deployment automation.
 
-The current final portfolio deployment is a Terraform managed single-instance AWS architecture:
+## Project Evolution
+
+This project was developed in stages to demonstrate the progression from a local analytical prototype to a cloud hosted, monitored, and automated deployment.
 
 ```text
-User browser
-  -> EC2 public IP on HTTP port 80
+Local FastAPI dashboard
+  -> EC2 deployment
+  -> Persistent systemd service
   -> Nginx reverse proxy
-  -> FastAPI app on localhost port 8000
-  -> dashboard routes, static assets, templates, and local project data
+  -> Terraform managed infrastructure
+  -> CloudWatch and SNS monitoring
+  -> Route 53 application health checks
+  -> GitHub Actions deployment automation with OIDC and SSM
 ```
 
-Application deployment is automated through GitHub Actions using GitHub OIDC, AWS IAM, and AWS Systems Manager. Monitoring includes EC2 CloudWatch alarms, SNS email alerting, and a Route 53 HTTP health check for the public `/health` endpoint.
+Earlier AWS architecture experiments, including ALB, Target Group, Custom AMI, Launch Template, and Auto Scaling Group work, are preserved in `docs/` as learning and exploration notes. They are not the current final deployment path.
 
-## Portfolio Purpose
+## Current Architecture
 
-This project demonstrates the ability to:
+The current portfolio architecture is a Terraform managed single-instance AWS deployment.
 
-- Build a data-driven FastAPI web application.
-- Design a public-facing geospatial dashboard with Leaflet and Chart.js.
-- Deploy a Python application to AWS EC2.
-- Use Nginx as a public reverse proxy in front of an internal FastAPI runtime.
-- Manage cloud infrastructure with Terraform.
-- Configure persistent application runtime with `systemd`.
-- Add CloudWatch alarms and SNS email alerting.
-- Add Route 53 application health monitoring for a public health endpoint.
-- Use AWS Systems Manager for remote deployment command execution.
-- Use GitHub Actions OIDC for keyless AWS deployment automation.
-- Connect cloud infrastructure work to a meaningful geospatial analytics use case.
-
-## Current Project Status
-
-Current final portfolio status:
-
-```text
-Dashboard MVP: feature frozen
-MVP Git tag: dashboard-mvp-v1
-AWS deployment: active
-Infrastructure management: Terraform
-Compute: single Amazon Linux 2023 EC2 instance
-Public web entry point: Nginx on HTTP port 80
-FastAPI runtime: localhost port 8000
-Service manager: systemd
-Public dashboard URL: http://54.242.183.123
-Health endpoint: http://54.242.183.123/health
-Deployment automation: GitHub Actions + OIDC + AWS SSM
-Monitoring: CloudWatch, SNS, Route 53 health check
-Direct public FastAPI port 8000 access: closed
-```
-
-Earlier ALB, Target Group, Custom AMI, Launch Template, and Auto Scaling Group work is retained in `docs/` as exploratory AWS architecture documentation. Those components are not the current final deployment path for this portfolio version.
-
-## Dashboard MVP Checkpoint
-
-The dashboard MVP is feature frozen at the Git tag:
-
-```text
-dashboard-mvp-v1
-```
-
-This checkpoint captures Phase 5: Dashboard MVP Polish and Analytical Layer Expansion.
-
-Current dashboard capabilities include:
-
-- Interactive Leaflet map with point, cluster, density, and choropleth visualization modes.
-- Durham municipal boundary geography and census tracts intersecting the municipal boundary.
-- Full census tract geometries preserved for ACS and tract-level analytical consistency.
-- Tract-level enrichment outputs combining ACS demographic indicators and event aggregates.
-- Separate enriched arrest and shooting event outputs.
-- Neighborhood context geography for public interpretation and local orientation.
-- KPI cards, district and severity charts, top offense summaries, selected records, and a Temporal Activity Explorer.
-- Start date and end date filtering intended to update the full dashboard.
-- Refined tract popup behavior, choropleth legends, selected-feature highlighting, and spatial filtering interactions.
-
-The dashboard should remain stable as a portfolio MVP. Current work has shifted from dashboard feature iteration to infrastructure, deployment automation, monitoring, and documentation.
-
-## Current AWS Architecture
-
-The current deployment uses a Terraform managed EC2 instance with Nginx as the public web entry point and FastAPI running internally.
-
-The schematic below shows the current runtime path, deployment automation path, and monitoring/alerting path.
+Public traffic enters through Nginx on standard HTTP port `80`. The FastAPI application runs internally on localhost port `8000` and is managed by `systemd`.
 
 ![Final AWS architecture schematic](artifacts/diagrams/final_aws_architecture.png)
 
@@ -94,19 +37,17 @@ High resolution version for portfolio or presentation use:
 artifacts/diagrams/final_aws_architecture_highres.png
 ```
 
+Runtime path:
+
 ```text
 User browser
-  ↓
-EC2 public IP on HTTP port 80
-  ↓
-Nginx reverse proxy
-  ↓
-FastAPI application on localhost port 8000
-  ↓
-Dashboard routes, templates, static assets, GeoJSON layers, and local project data
+  -> EC2 public IP on HTTP port 80
+  -> Nginx reverse proxy
+  -> FastAPI app on localhost port 8000
+  -> dashboard routes, templates, static files, and local project data
 ```
 
-Current public access:
+Current public endpoints:
 
 ```text
 Dashboard: http://54.242.183.123
@@ -122,12 +63,35 @@ Confirmed runtime details:
 | Internal FastAPI port | `8000` |
 | Service name | `durham-risk-dashboard.service` |
 | EC2 deploy path | `/home/ec2-user/durham-aws-risk-dashboard` |
-| GitHub repository | `bifediora/durham-aws-risk-dashboard` |
 | AWS region | `us-east-1` |
 
-## Terraform Managed Deployment
+## Dashboard Capabilities
 
-Terraform in `infra/terraform/` manages the current AWS infrastructure foundation:
+The dashboard MVP is feature frozen at the Git tag:
+
+```text
+dashboard-mvp-v1
+```
+
+The dashboard is intended for public-facing spatial analysis, monitoring, preparedness, and resilience interpretation. It is not an enforcement prediction tool.
+
+Core dashboard capabilities include:
+
+- Interactive Leaflet map with point, cluster, density, and choropleth visualization modes.
+- Durham municipal boundary and census tracts intersecting the municipal boundary.
+- Full census tract geometries preserved for ACS and tract-level analytical consistency.
+- Tract-level enrichment outputs combining ACS demographic indicators and event aggregates.
+- Separate enriched arrest and shooting event outputs.
+- Neighborhood context geography for public interpretation and local orientation.
+- KPI cards, district and severity charts, top offense summaries, selected records, and a Temporal Activity Explorer.
+- Start date and end date filtering intended to update the full dashboard.
+- Refined tract popup behavior, choropleth legends, selected-feature highlighting, and spatial filtering interactions.
+
+## Infrastructure as Code
+
+Terraform in `infra/terraform/` manages the current AWS infrastructure foundation.
+
+Terraform currently manages:
 
 - EC2 instance.
 - Security group.
@@ -138,7 +102,7 @@ Terraform in `infra/terraform/` manages the current AWS infrastructure foundatio
 - Route 53 application health check.
 - Terraform outputs for public URL, instance details, and internal app port.
 
-The EC2 instance uses a bootstrap script connected through Terraform `user_data`:
+The EC2 instance is configured through a bootstrap script connected to Terraform `user_data`:
 
 ```text
 infra/scripts/ec2_bootstrap.sh
@@ -146,7 +110,7 @@ infra/scripts/ec2_bootstrap.sh
 
 The bootstrap process installs system dependencies, clones the repository, creates the Python virtual environment, installs `requirements.txt`, creates the `systemd` service, configures Nginx, and starts both services.
 
-The Terraform security group allows public HTTP traffic on port `80`. Public inbound access to FastAPI port `8000` has been removed; port `8000` remains an internal application runtime port behind Nginx.
+The security group allows public HTTP traffic on port `80`. Public inbound access to FastAPI port `8000` has been removed; port `8000` remains an internal application runtime port behind Nginx.
 
 ## Deployment Automation
 
@@ -160,20 +124,13 @@ Deployment flow:
 
 ```text
 Developer pushes to main
-  ↓
-GitHub Actions starts
-  ↓
-GitHub OIDC assumes AWS IAM deploy role
-  ↓
-GitHub Actions sends AWS SSM command
-  ↓
-EC2 pulls latest code
-  ↓
-Python requirements are checked
-  ↓
-systemd restarts durham-risk-dashboard.service
-  ↓
-local /health endpoint is validated
+  -> GitHub Actions starts
+  -> GitHub OIDC assumes AWS IAM deploy role
+  -> GitHub Actions sends AWS SSM command
+  -> EC2 pulls latest code
+  -> Python requirements are checked
+  -> systemd restarts durham-risk-dashboard.service
+  -> local /health endpoint is validated
 ```
 
 GitHub Actions does not SSH into EC2, and no SSH access was opened for GitHub hosted runners. The workflow uses GitHub OIDC instead of long-lived AWS access keys in GitHub.
@@ -184,9 +141,11 @@ GitHub Actions deploy role:
 arn:aws:iam::333973504198:role/durham-risk-dashboard-dev-github-actions-deploy-role
 ```
 
+This deployment path demonstrates CI/CD fundamentals, identity federation, IAM role design, AWS Systems Manager command execution, and service-level health validation.
+
 ## Monitoring and Alerting
 
-The current deployment monitors both infrastructure health and application health.
+The deployment monitors both infrastructure health and application health.
 
 Infrastructure monitoring:
 
@@ -257,9 +216,9 @@ durham-aws-risk-dashboard/
 
 ## Technical Skills Demonstrated
 
-- Python web application development with FastAPI.
+- FastAPI application development.
 - Geospatial dashboard development with Leaflet.
-- Analytical charting with Chart.js.
+- Analytical visualization with Chart.js.
 - Census/ACS enrichment and tract-level geospatial processing.
 - AWS EC2 application hosting.
 - Nginx reverse proxy configuration.
