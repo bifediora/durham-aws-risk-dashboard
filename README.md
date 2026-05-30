@@ -87,6 +87,24 @@ Core dashboard capabilities include:
 - Start date and end date filtering intended to update the full dashboard.
 - Refined tract popup behavior, choropleth legends, selected-feature highlighting, and spatial filtering interactions.
 
+## Data Sources
+
+This project uses publicly available public safety, geographic, and census-based datasets to support spatial analysis and dashboard visualization.
+
+Primary data sources include:
+
+- Durham public safety event data used for arrest and shooting event analysis.
+- Durham municipal boundary and operational geography used for map context.
+- U.S. Census tract geography used as the primary analytical geography.
+- American Community Survey data used for tract-level demographic and contextual enrichment.
+- Durham neighborhood context geography from the `PhillipBost/durham-hoods-geojson` GitHub repository, which provides Durham, North Carolina neighborhood boundaries in GeoJSON format.
+
+Neighborhood source:
+
+- `PhillipBost/durham-hoods-geojson`: https://github.com/PhillipBost/durham-hoods-geojson
+
+The dashboard is intended for public-facing spatial analysis, preparedness, and decision intelligence. It is not designed as an enforcement prediction tool.
+
 ## Infrastructure as Code
 
 Terraform in `infra/terraform/` manages the current AWS infrastructure foundation.
