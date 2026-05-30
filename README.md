@@ -162,17 +162,25 @@ The Route 53 health check reaches the application through the public Nginx endpo
 
 ## Screenshots
 
-### Dashboard Summary
+### Dashboard Overview
 
-![Dashboard summary](artifacts/screenshots/dashboard_top_summary.png)
+![Dashboard overview](./artifacts/screenshots/dashboard_overview.png)
 
-### Map Layers and Spatial View
+### Dashboard Summary and KPI View
 
-![Dashboard map layers](artifacts/screenshots/dashboard_map_layers.png)
+![Dashboard summary and KPI view](./artifacts/screenshots/dashboard_top_summary.png)
 
-### Analytical Charts
+### Choropleth Analysis View
 
-![Dashboard analytical charts](artifacts/screenshots/dashboard_analytic_charts.png)
+![Choropleth analysis view](./artifacts/screenshots/choropleth_analysis_view_1.png)
+
+### Additional Spatial Analysis View
+
+![Additional spatial analysis view](./artifacts/screenshots/choropleth_analysis_view_2.png)
+
+### Dashboard Analytics View
+
+![Dashboard analytics view](./artifacts/screenshots/dashboard_analytics_view_1.png)
 
 ## Repository Structure
 
