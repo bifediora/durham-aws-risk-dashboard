@@ -141,7 +141,7 @@ Dashboard screenshots captured and uploaded to S3:
 
 - Captured three dashboard screenshots from the public EC2 dashboard:
   - `dashboard_top_summary.png`
-  - `dashboard_map_layers.png`
+  - `artifacts/screenshots/choropleth_analysis_view_2.png`
   - `dashboard_analytics_charts.png`
 
 - Stored the screenshots locally in:

@@ -803,7 +803,7 @@ Current screenshot artifacts:
 
 ```text
 dashboard_top_summary.png
-dashboard_map_layers.png
+artifacts/screenshots/choropleth_analysis_view_2.png
 dashboard_analytics_charts.png
 ```
 
