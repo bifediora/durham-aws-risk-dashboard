@@ -279,6 +279,6 @@ Supporting documentation is stored in the `docs/` folder.
 
 ## Portfolio Narrative
 
-This project demonstrates the ability to take a meaningful geospatial analytics application from local development to an AWS-hosted, Terraform-managed deployment with automated updates and operational monitoring.
+This project shows the full path from a local geospatial dashboard to a cloud hosted AWS application with automated deployment and monitoring.
 
-The final portfolio architecture emphasizes a practical cloud engineering path: FastAPI application development, EC2 hosting, Nginx reverse proxying, security group hardening, Terraform infrastructure, SSM-based deployment automation, GitHub Actions OIDC federation, CloudWatch/SNS alerting, and Route 53 application health monitoring.
+It combines FastAPI, EC2, Nginx, Terraform, GitHub Actions, AWS Systems Manager, CloudWatch/SNS alerting, and Route 53 health checks into one practical cloud engineering portfolio project.
