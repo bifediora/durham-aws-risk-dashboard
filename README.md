@@ -178,13 +178,13 @@ The Route 53 health check reaches the application through the public Nginx endpo
 
 ## Screenshots
 
-### Dashboard Overview
-
-![Dashboard overview](./artifacts/screenshots/dashboard_overview.png)
-
 ### Dashboard Summary and KPI View
 
 ![Dashboard summary and KPI view](./artifacts/screenshots/dashboard_top_summary.png)
+
+### Dashboard Overview
+
+![Dashboard overview](./artifacts/screenshots/dashboard_overview.png)
 
 ### Choropleth Analysis View
 
