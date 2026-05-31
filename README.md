@@ -29,13 +29,11 @@ The current portfolio architecture is a Terraform managed single-instance AWS de
 
 Public traffic enters through Nginx on standard HTTP port `80`. The FastAPI application runs internally on localhost port `8000` and is managed by `systemd`.
 
-![Final AWS architecture schematic](artifacts/diagrams/final_aws_architecture.png)
+### Final AWS Architecture
 
-High resolution version for portfolio or presentation use:
+![Final AWS architecture](./artifacts/diagrams/final_aws_architecture_readme.png)
 
-```text
-artifacts/diagrams/final_aws_architecture_highres.png
-```
+[Open high resolution architecture diagram](./artifacts/diagrams/final_aws_architecture_highres.png)
 
 Runtime path:
 
