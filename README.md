@@ -256,7 +256,7 @@ durham-aws-risk-dashboard/
 
 ## Current Limitations
 
-This is a portfolio-ready single-instance deployment, not a multi-AZ production system.
+This is a portfolio ready, single instance deployment, not a multiple AZ production system.
 
 Current limitations:
 
