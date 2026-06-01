@@ -1729,3 +1729,47 @@ This milestone demonstrates CI/CD fundamentals, identity federation, least privi
 #### Next step
 
 Future improvements may include deployment notifications, richer workflow status reporting, log forwarding, HTTPS, Route 53 DNS, or broader test gates. Do not proceed to those items until this GitHub Actions deployment automation checkpoint is reviewed.
+
+## AWS Reference Style Architecture Diagram Checkpoint
+
+Completed the AWS reference style architecture diagram refresh.
+
+This checkpoint improved the visual presentation of the current Durham Risk Intelligence Dashboard cloud architecture for GitHub portfolio review.
+
+Work completed:
+
+- Reviewed the existing architecture diagram presentation.
+- Used an AWS reference architecture style as the visual direction.
+- Confirmed the diagram should reflect the current final architecture, not earlier exploratory ALB, Auto Scaling, App Runner, ECR, CodeBuild, or Fargate patterns.
+- Redrew the diagram around the current deployment flow:
+  - GitHub repository
+  - GitHub Actions workflow
+  - IAM OIDC deploy role
+  - AWS Systems Manager
+  - Terraform managed EC2 instance
+  - Nginx reverse proxy on port 80
+  - FastAPI / Uvicorn on localhost port 8000
+  - systemd service management
+  - Route 53 health check
+  - CloudWatch alarms
+  - SNS alerting
+- Organized the diagram around three major flows:
+  - Deployment Automation Flow
+  - Application Runtime Flow
+  - Monitoring and Alerting Flow
+- Completed multiple QA passes to correct spelling, capitalization, service names, and diagram formatting.
+- Corrected labels such as:
+  - GitHub
+  - AWS Systems Manager
+  - Amazon CloudWatch
+  - Terraform Infrastructure as Code
+  - Project AWS Account
+  - Operations Email Inbox
+- Confirmed the Nginx reverse proxy was represented correctly.
+- Saved the final diagram as:
+
+```text
+artifacts/diagrams/final_aws_architecture_reference_style.png
+```
+
+- Updated the README architecture reference so the GitHub portfolio view uses the new AWS reference style diagram while preserving the high resolution diagram link.
