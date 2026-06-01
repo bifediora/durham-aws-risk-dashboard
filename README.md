@@ -31,7 +31,7 @@ Public traffic enters through Nginx on standard HTTP port `80`. The FastAPI appl
 
 ### Final AWS Architecture
 
-![Final AWS architecture](./artifacts/diagrams/final_aws_architecture_readme.png)
+![Final AWS architecture](./artifacts/diagrams/final_aws_architecture_reference_style.png)
 
 [Open high resolution architecture diagram](./artifacts/diagrams/final_aws_architecture_highres.png)
 
