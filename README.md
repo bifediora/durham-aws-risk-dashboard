@@ -85,6 +85,39 @@ Core dashboard capabilities include:
 - Start date and end date filtering intended to update the full dashboard.
 - Refined tract popup behavior, choropleth legends, selected-feature highlighting, and spatial filtering interactions.
 
+## Machine Learning Extension
+
+The project now includes an offline ML extension for tract-level elevated arrest activity modeling. The ML layer is arrest-focused, does not use shooting data, does not predict individual behavior, and is not crime prediction. It is intended for tract-level analytical interpretation, contextual indicators, decision-support interpretation, and portfolio demonstration.
+
+The initial target is:
+
+```text
+elevated_arrest_activity_flag
+```
+
+Target definition:
+
+- `1` = census tract in the top 25% by arrests per 1,000 residents.
+- `0` = all other census tracts.
+
+Phase 1 includes a logistic regression baseline, a random forest comparison model, and repeated stratified cross-validation. Repeated stratified cross-validation supported logistic regression as the preferred explainable baseline, while random forest remained useful as a nonlinear comparison model.
+
+Direct arrest-rate, raw arrest-count, identifier, and text/categorical columns were excluded from modeling features to reduce leakage.
+
+ML documentation:
+
+- [ML Phase 1 Plan](docs/ml_phase_1_plan.md)
+- [Model Card](docs/ml_model_card.md)
+- [Model Comparison](docs/ml_model_comparison.md)
+
+ML artifacts:
+
+- `ml/scripts/build_ml_dataset.py`
+- `ml/scripts/train_logistic_regression.py`
+- `ml/scripts/train_random_forest.py`
+- `ml/scripts/evaluate_models_cross_validation.py`
+- `ml/notebooks/01_logistic_regression_exploration.ipynb`
+
 ## Data Sources
 
 This project uses publicly available public safety, geographic, and census-based datasets to support spatial analysis and dashboard visualization.
