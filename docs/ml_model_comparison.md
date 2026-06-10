@@ -35,7 +35,7 @@ Both models used the same 58-feature set and the same exclusions. Direct target/
 
 The remaining features include ACS/context indicators, housing, education, density, neighborhood overlap count, and arrest-pattern share variables.
 
-## Model Results
+## Single Held-Out Split Results
 
 | Metric | Logistic Regression | Random Forest |
 |---|---:|---:|
@@ -47,6 +47,32 @@ The remaining features include ACS/context indicators, housing, education, densi
 | Train Rows | 47 | 47 |
 | Test Rows | 21 | 21 |
 | Number of Features | 58 | 58 |
+
+## Repeated Cross-Validation Results
+
+A repeated stratified cross-validation evaluation was added to avoid relying only on one 70/30 train/test split.
+
+Evaluation setup:
+
+- Method: RepeatedStratifiedKFold
+- 5 splits
+- 10 repeats
+- 50 evaluations per model
+- Same 58-feature leakage-controlled feature set
+- Same 68 census tracts
+- Same target: `elevated_arrest_activity_flag`
+
+| Metric | Logistic Regression Mean | Logistic Regression Std | Random Forest Mean | Random Forest Std |
+|---|---:|---:|---:|---:|
+| Accuracy | 0.7997 | 0.0866 | 0.7430 | 0.1052 |
+| Precision | 0.6166 | 0.1921 | 0.5269 | 0.2213 |
+| Recall | 0.6950 | 0.2420 | 0.7033 | 0.2777 |
+| F1 | 0.6236 | 0.1616 | 0.5689 | 0.1837 |
+| ROC AUC | 0.8839 | 0.0840 | 0.8587 | 0.1012 |
+
+On the single held-out split, random forest had stronger accuracy, precision, and F1. Across repeated cross-validation, logistic regression performed slightly better on accuracy, precision, F1, and ROC AUC. Random forest had slightly higher mean recall.
+
+This reinforces logistic regression as the preferred explainable baseline. Random forest remains useful as a nonlinear comparison model. Because the dataset is small, neither model should be treated as production-ready.
 
 ## Confusion Matrix Comparison
 
@@ -76,15 +102,14 @@ Random forest performed better on accuracy, precision, and F1 for this split. Lo
 
 ## Preferred Baseline
 
-For responsible interpretation and portfolio explanation, logistic regression should remain the primary explainable baseline. Random forest should be presented as a comparison model that tests whether a nonlinear method improves classification performance.
+Logistic regression remains the preferred baseline because it is explainable and performed slightly better overall in repeated cross-validation. Random forest should be presented as a comparison model that tests nonlinear performance.
 
-Random forest should not be described as definitively better because the sample size is small.
+Neither model should be described as definitively superior because the dataset is small and no external validation has been done.
 
 ## Limitations
 
 - Only 68 census tracts.
-- Only one held-out train/test split so far.
-- No repeated cross-validation yet.
+- Repeated cross-validation has been added, but it still uses the same small dataset.
 - No external validation.
 - Arrest data reflects enforcement and administrative activity, not direct harm.
 - Demographic features require careful interpretation.
@@ -92,12 +117,12 @@ Random forest should not be described as definitively better because the sample 
 
 ## Recommended Next Steps
 
-1. Add repeated stratified cross-validation for both models.
-2. Add a reduced feature set for interpretability.
-3. Update the model card with random forest comparison results.
-4. Create a notebook section or second notebook comparing both models.
-5. Only consider API/dashboard integration after validation is stronger.
+1. Add a reduced feature set for interpretability.
+2. Update or add a notebook section comparing single-split and cross-validation results.
+3. Consider calibration analysis if probabilities are later exposed.
+4. Consider API/dashboard integration only after deciding what output is appropriate to expose.
+5. Preserve responsible-use caveats in any public-facing ML layer.
 
 ## Portfolio Talking Point
 
-I compared an explainable logistic regression baseline with a nonlinear random forest classifier using the same leakage-controlled tract-level feature set. The random forest improved accuracy, precision, and F1 on the held-out split, while logistic regression remained the more transparent model for interpretation. I treated both models as exploratory because the dataset contains only 68 census tracts and requires additional validation before dashboard integration.
+I compared an explainable logistic regression baseline with a nonlinear random forest classifier using the same leakage-controlled tract-level feature set. The random forest improved accuracy, precision, and F1 on the held-out split, while repeated cross-validation showed logistic regression performing slightly better overall and remaining the more transparent model for interpretation. I treated both models as exploratory because the dataset contains only 68 census tracts and requires additional validation before dashboard integration.
