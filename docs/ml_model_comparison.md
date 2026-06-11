@@ -1,13 +1,14 @@
-# ML Model Comparison: Logistic Regression vs Random Forest
+# ML Model Comparison: Logistic Regression, Random Forest, and PCA Logistic Regression
 
 ## Purpose
 
-This document compares two baseline tract-level models for classifying elevated arrest activity:
+This document compares three baseline tract-level models for classifying elevated arrest activity:
 
 - Logistic Regression
 - Random Forest Classifier
+- PCA-Compressed Logistic Regression
 
-Both models are exploratory and are part of an offline ML extension to the Durham Risk Intelligence Dashboard. They are intended for model comparison, interpretation, and responsible decision-support exploration before any dashboard integration.
+All three models are exploratory and are part of an offline ML extension to the Durham Risk Intelligence Dashboard. They are intended for model comparison, interpretation, and responsible decision-support exploration before any dashboard integration.
 
 ## Modeling Objective
 
@@ -21,7 +22,7 @@ The modeling target is `elevated_arrest_activity_flag`.
 
 ## Feature and Leakage Controls
 
-Both models used the same 58-feature set and the same exclusions. Direct target/leakage variables and raw arrest-volume variables were excluded, including:
+The full-feature logistic regression and random forest models used the same 58-feature set and the same exclusions. The PCA-compressed logistic regression model used the same leakage-controlled feature space before reducing it into principal components. Direct target/leakage variables and raw arrest-volume variables were excluded, including:
 
 - `arrests_per_1000_population`
 - `total_arrests`
@@ -74,6 +75,25 @@ On the single held-out split, random forest had stronger accuracy, precision, an
 
 This reinforces logistic regression as the preferred explainable baseline. Random forest remains useful as a nonlinear comparison model. Because the dataset is small, neither model should be treated as production-ready.
 
+## PCA-Compressed Logistic Regression
+
+PCA was added after the full-feature logistic regression and random forest comparison. The purpose was to test whether correlated tract-level contextual indicators could be compressed into lower-dimensional contextual components.
+
+The PCA logistic regression model used the same target, `elevated_arrest_activity_flag`. The input feature space had 58 leakage-controlled features before PCA. Component counts of 5, 6, 7, and 8 were tested using RepeatedStratifiedKFold with 5 splits and 10 repeats.
+
+The selected model used 7 PCA components. Eight components had the highest mean F1, but seven components was selected because it was within 0.02 F1 and was more parsimonious.
+
+| PCA Components | Accuracy | Precision | Recall | F1 | ROC AUC |
+|---:|---:|---:|---:|---:|---:|
+| 5 | 0.6935 | 0.4567 | 0.6433 | 0.5083 | 0.7849 |
+| 6 | 0.7755 | 0.5772 | 0.7483 | 0.6255 | 0.8493 |
+| 7 | 0.7831 | 0.5898 | 0.7433 | 0.6305 | 0.8567 |
+| 8 | 0.7927 | 0.6070 | 0.7583 | 0.6487 | 0.8638 |
+
+Full-feature logistic regression remains the most directly interpretable baseline. Random forest provides a nonlinear comparison. PCA-compressed logistic regression provides a dimensionality-reduction comparison that preserves useful classification signal while reducing 58 original features to 7 contextual components.
+
+PCA components should be interpreted cautiously because they are mathematical combinations of variables, not natural causal constructs.
+
 ## Confusion Matrix Comparison
 
 Logistic Regression:
@@ -100,11 +120,18 @@ Logistic regression is more directly explainable because coefficients show featu
 
 Random forest performed better on accuracy, precision, and F1 for this split. Logistic regression remains a useful baseline because it is simpler and more transparent.
 
-## Preferred Baseline
+## Recommended Interpretation
 
 Logistic regression remains the preferred baseline because it is explainable and performed slightly better overall in repeated cross-validation. Random forest should be presented as a comparison model that tests nonlinear performance.
 
-Neither model should be described as definitively superior because the dataset is small and no external validation has been done.
+None of the models should be described as definitively superior because the dataset is small and no external validation has been done.
+
+Recommended interpretation:
+
+- Full-feature logistic regression: primary explainable baseline.
+- Random forest: nonlinear benchmark.
+- PCA logistic regression: dimensionality-reduction / contextual-component benchmark.
+- None of the models should be interpreted as individual-level risk models or operational enforcement tools.
 
 ## Limitations
 
@@ -125,4 +152,4 @@ Neither model should be described as definitively superior because the dataset i
 
 ## Portfolio Talking Point
 
-I compared an explainable logistic regression baseline with a nonlinear random forest classifier using the same leakage-controlled tract-level feature set. The random forest improved accuracy, precision, and F1 on the held-out split, while repeated cross-validation showed logistic regression performing slightly better overall and remaining the more transparent model for interpretation. I treated both models as exploratory because the dataset contains only 68 census tracts and requires additional validation before dashboard integration.
+I compared an explainable logistic regression baseline with a nonlinear random forest classifier and a PCA-compressed logistic regression model using leakage-controlled tract-level features. The random forest improved accuracy, precision, and F1 on the held-out split, repeated cross-validation showed full-feature logistic regression performing slightly better overall, and PCA logistic regression tested whether correlated contextual indicators could be compressed into fewer contextual components. I treated all models as exploratory because the dataset contains only 68 census tracts and requires additional validation before dashboard integration.
