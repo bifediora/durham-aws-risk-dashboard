@@ -104,6 +104,28 @@ Phase 1 includes a logistic regression baseline, a random forest comparison mode
 
 Direct arrest-rate, raw arrest-count, identifier, and text/categorical columns were excluded from modeling features to reduce leakage.
 
+### Spatial Autocorrelation Analysis
+
+The project also includes an offline spatial statistical analysis using Global Moran's I and Local Moran's I / LISA to evaluate whether tract-level arrest activity is spatially clustered across neighboring census tracts.
+
+The analysis uses all Durham census tracts in the enriched tract GeoJSON and uses `arrests_per_1000_population` as the analysis variable. Global Moran's I was `0.2443` with a permutation p-value of `0.001`, indicating statistically significant positive spatial autocorrelation in tract-level arrest rates.
+
+At `p <= 0.05`, Local Moran's I / LISA identified:
+
+- High-High: 6
+- Low-Low: 4
+- High-Low: 1
+- Not significant: 57
+
+This complements the ML models by evaluating geographic clustering of observed arrest rates rather than classifying elevated activity from contextual indicators. It is exploratory and should not be interpreted as an individual-level risk model or operational enforcement tool.
+
+Spatial autocorrelation resources:
+
+- [Spatial Autocorrelation Notes](docs/ml_spatial_autocorrelation_notes.md)
+- `ml/scripts/run_morans_i_hotspot_analysis.py`
+- `ml/outputs/morans_i_global_summary.json`
+- `ml/outputs/local_morans_i_static_map.png`
+
 ML documentation:
 
 - [ML Phase 1 Plan](docs/ml_phase_1_plan.md)
