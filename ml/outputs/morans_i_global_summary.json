@@ -1,0 +1,39 @@
+{
+  "input_path": "data/processed/durham_arrests_tract_enriched.geojson",
+  "analysis_variable": "arrests_per_1000_population",
+  "n_tracts": 68,
+  "spatial_weights_method": "Queen contiguity",
+  "spatial_weights": "Queen contiguity",
+  "weights_transform": "row-standardized",
+  "islands": [],
+  "permutations": 999,
+  "morans_i": 0.2442703480703067,
+  "global_morans_i": 0.2442703480703067,
+  "expected_i": -0.014925373134328358,
+  "variance_norm": 0.005031404147551872,
+  "z_norm": 3.654123541372006,
+  "p_norm": 0.00025806199645634823,
+  "z_rand": 6.325650727677201,
+  "p_rand": 2.521676191640921e-10,
+  "p_sim": 0.001,
+  "z_sim": 6.284590510987278,
+  "cluster_counts_05": {
+    "High-High": 6,
+    "High-Low": 1,
+    "Low-Low": 4,
+    "Not significant": 57
+  },
+  "cluster_counts_10": {
+    "High-High": 7,
+    "Low-High": 1,
+    "Low-Low": 10,
+    "High-Low": 2,
+    "Not significant": 48
+  },
+  "output_paths": {
+    "global_summary": "ml/outputs/morans_i_global_summary.json",
+    "local_results_csv": "ml/outputs/local_morans_i_results.csv",
+    "local_results_geojson": "ml/outputs/local_morans_i_tracts.geojson"
+  },
+  "responsible_use_note": "This spatial autocorrelation analysis evaluates whether tract-level arrest activity is spatially clustered across census tracts. It is an exploratory spatial analysis, not an individual-level risk model, and should not be interpreted as predicting criminal behavior."
+}
