@@ -104,6 +104,17 @@ Phase 1 includes a logistic regression baseline, a random forest comparison mode
 
 Direct arrest-rate, raw arrest-count, identifier, and text/categorical columns were excluded from modeling features to reduce leakage.
 
+### Analytics Workflow Summary
+
+| Method | Question Answered | Role in Project |
+|---|---|---|
+| Logistic Regression | Can contextual indicators classify elevated tract-level arrest activity? | Explainable baseline |
+| Random Forest | Do nonlinear relationships improve classification performance? | Nonlinear benchmark |
+| PCA Logistic Regression | Can correlated indicators be compressed into contextual components? | Dimensionality-reduction benchmark |
+| Moran's I / LISA | Are observed arrest rates spatially clustered across neighboring tracts? | Spatial autocorrelation analysis |
+
+Together, these methods separate three analytical tasks: classification of elevated tract-level arrest activity, dimensionality reduction of correlated contextual indicators, and spatial autocorrelation testing of observed arrest-rate patterns. All analyses are exploratory and intended for responsible decision-support interpretation rather than individual-level prediction or operational enforcement use.
+
 ### Spatial Autocorrelation Analysis
 
 The project also includes an offline spatial statistical analysis using Global Moran's I and Local Moran's I / LISA to evaluate whether tract-level arrest activity is spatially clustered across neighboring census tracts.
