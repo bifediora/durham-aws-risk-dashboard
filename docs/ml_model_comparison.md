@@ -94,6 +94,35 @@ Full-feature logistic regression remains the most directly interpretable baselin
 
 PCA components should be interpreted cautiously because they are mathematical combinations of variables, not natural causal constructs.
 
+## Spatial Autocorrelation Complement
+
+Logistic regression, random forest, and PCA logistic regression are classification models. Moran's I / LISA is a spatial statistical analysis.
+
+Global Moran's I evaluates whether observed tract-level arrest rates are spatially autocorrelated across neighboring census tracts. Local Moran's I / LISA identifies local spatial association patterns such as High-High, Low-Low, High-Low, and Low-High.
+
+This complements the ML models by evaluating geographic clustering of observed arrest rates rather than classifying elevated activity from contextual indicators.
+
+Spatial autocorrelation results:
+
+- Analysis variable: `arrests_per_1000_population`
+- Spatial weights: Queen contiguity, row-standardized
+- Number of tracts: 68
+- Global Moran's I: 0.2443
+- Permutation p-value: 0.001
+- Interpretation: statistically significant positive spatial autocorrelation in tract-level arrest rates
+
+Local cluster summary at `p <= 0.05`:
+
+| LISA Cluster | Count |
+|---|---:|
+| High-High | 6 |
+| Low-Low | 4 |
+| High-Low | 1 |
+| Low-High | 0 |
+| Not significant | 57 |
+
+The spatial autocorrelation results suggest tract-level arrest activity is spatially patterned across neighboring census tracts. These findings are exploratory and should not be interpreted as individual-level risk predictions, causal explanations, or operational enforcement directives.
+
 ## Confusion Matrix Comparison
 
 Logistic Regression:
@@ -131,6 +160,7 @@ Recommended interpretation:
 - Full-feature logistic regression: primary explainable baseline.
 - Random forest: nonlinear benchmark.
 - PCA logistic regression: dimensionality-reduction / contextual-component benchmark.
+- Moran's I / LISA: spatial autocorrelation and local spatial association benchmark.
 - None of the models should be interpreted as individual-level risk models or operational enforcement tools.
 
 ## Limitations
@@ -152,4 +182,4 @@ Recommended interpretation:
 
 ## Portfolio Talking Point
 
-I compared an explainable logistic regression baseline with a nonlinear random forest classifier and a PCA-compressed logistic regression model using leakage-controlled tract-level features. The random forest improved accuracy, precision, and F1 on the held-out split, repeated cross-validation showed full-feature logistic regression performing slightly better overall, and PCA logistic regression tested whether correlated contextual indicators could be compressed into fewer contextual components. I treated all models as exploratory because the dataset contains only 68 census tracts and requires additional validation before dashboard integration.
+I compared an explainable logistic regression baseline with a nonlinear random forest classifier and a PCA-compressed logistic regression model using leakage-controlled tract-level features. The random forest improved accuracy, precision, and F1 on the held-out split, repeated cross-validation showed full-feature logistic regression performing slightly better overall, and PCA logistic regression tested whether correlated contextual indicators could be compressed into fewer contextual components. I also added Global Moran's I and Local Moran's I / LISA to test whether observed tract-level arrest rates were spatially clustered. I treated all models and spatial analyses as exploratory because the dataset contains only 68 census tracts and requires additional validation before dashboard integration.
