@@ -5,7 +5,7 @@ import json
 import math
 
 import pandas as pd
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -31,6 +31,7 @@ ENRICHED_TRACTS_PATH = (
 )
 CHOROPLETH_CATALOG_PATH = BASE_DIR / "data" / "processed" / "durham_choropleth_metric_catalog.json"
 NEIGHBORHOODS_WEB_PATH = BASE_DIR / "data" / "processed" / "durham_neighborhoods_web.geojson"
+LISA_CLUSTERS_PATH = BASE_DIR / "ml" / "outputs" / "local_morans_i_tracts.geojson"
 
 FULL_ARRESTS_PATH = BASE_DIR / "data" / "arrests.xlsx"
 FULL_SHOOTINGS_PATH = BASE_DIR / "data" / "shootings.xlsx"
@@ -558,6 +559,49 @@ def load_neighborhood_context_geojson():
             "type": "FeatureCollection",
             "features": [],
         }
+
+
+@lru_cache(maxsize=1)
+def load_lisa_clusters_geojson():
+    if not LISA_CLUSTERS_PATH.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Precomputed LISA cluster GeoJSON was not found. "
+                f"Expected file: {LISA_CLUSTERS_PATH}"
+            ),
+        )
+
+    try:
+        with LISA_CLUSTERS_PATH.open("r", encoding="utf-8") as file:
+            geojson = json.load(file)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Precomputed LISA cluster GeoJSON could not be parsed. "
+                f"Expected valid GeoJSON at: {LISA_CLUSTERS_PATH}"
+            ),
+        ) from exc
+    except OSError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Precomputed LISA cluster GeoJSON could not be read. "
+                f"Expected file: {LISA_CLUSTERS_PATH}"
+            ),
+        ) from exc
+
+    if geojson.get("type") != "FeatureCollection" or not isinstance(geojson.get("features"), list):
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Precomputed LISA cluster GeoJSON is not a valid FeatureCollection. "
+                f"Expected valid GeoJSON at: {LISA_CLUSTERS_PATH}"
+            ),
+        )
+
+    return geojson
 
 
 def apply_filters(
@@ -1116,6 +1160,23 @@ def api_neighborhoods():
         "status": "success",
         "role": "context_layer",
         "statistical_layer": "census_tracts",
+        "geojson": geojson,
+    }
+
+
+@app.get("/api/lisa-clusters")
+def api_lisa_clusters():
+    geojson = load_lisa_clusters_geojson()
+
+    return {
+        "status": "success",
+        "role": "non_operational_exploratory_spatial_analysis_layer",
+        "analysis": "Local Moran's I / LISA clusters",
+        "analysis_variable": "arrests_per_1000_population",
+        "description": (
+            "Precomputed tract-level arrest activity local spatial association "
+            "results for dashboard use."
+        ),
         "geojson": geojson,
     }
 
