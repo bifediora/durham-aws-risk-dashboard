@@ -271,6 +271,20 @@ The Route 53 health check reaches the application through the public Nginx endpo
 
 ![Dashboard analytics view](./artifacts/screenshots/dashboard_analytics_view_1.png)
 
+### Exploratory LISA Spatial Cluster Layer
+
+The dashboard includes a non-operational Local Moran's I / LISA layer for exploring tract-level spatial association in historical arrest rates. The layer can be toggled on and off, includes a map legend, and provides tract-level tooltip context including neighborhood, LISA cluster, arrest rate, Local Moran's I, and p-value.
+
+This layer is intended for exploratory spatial analysis and decision-support interpretation. It does not predict individual behavior, identify dangerous places, or support enforcement targeting.
+
+![LISA layer baseline](./artifacts/screenshots/lisa_layer_baseline.png)
+
+![LISA spatial clusters enabled](./artifacts/screenshots/lisa_layer_enabled.png)
+
+![LISA ranked tract detail 1](./artifacts/screenshots/lisa_cluster_ranked_tracts_1.png)
+
+![LISA ranked tract detail 2](./artifacts/screenshots/lisa_cluster_ranked_tracts_2.png)
+
 ## Repository Structure
 
 ```text
