@@ -925,3 +925,57 @@ tr:hover td {
         width: min(130px, 48vw);
     }
 }
+
+.layer-info-tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(15, 23, 42, 0.72);
+    color: rgba(186, 230, 253, 0.9);
+    font-size: 0.82rem;
+    font-weight: 900;
+    cursor: help;
+    user-select: none;
+}
+
+.layer-info-tooltip:focus {
+    outline: none;
+    border-color: rgba(56, 189, 248, 0.62);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+}
+
+.layer-info-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    z-index: 2000;
+    right: 0;
+    top: calc(100% + 10px);
+    width: min(320px, calc(100vw - 48px));
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    background: rgba(15, 23, 42, 0.96);
+    color: #e2e8f0;
+    box-shadow: 0 16px 34px rgba(2, 6, 23, 0.34);
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.45;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: normal;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.layer-info-tooltip:hover::after,
+.layer-info-tooltip:focus::after {
+    opacity: 1;
+    transform: translateY(0);
+}
