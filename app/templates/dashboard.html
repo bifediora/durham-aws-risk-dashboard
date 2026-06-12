@@ -5,7 +5,7 @@
     <title>Dashboard | Durham Risk Intelligence</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="/static/css/styles.css?v=map-interactions-20260525e">
+    <link rel="stylesheet" href="/static/css/styles.css?v=lisa-layer-20260612a">
 
     <link
         rel="stylesheet"
@@ -119,11 +119,15 @@
                                     <option value="night_share">Night activity share by tract</option>
                                 </select>
 
-                                <div class="map-layer-control" aria-label="Event layers">
-                                    <span class="map-layer-control-label">Event Layers</span>
+                                <div class="map-layer-control" aria-label="Map layers">
+                                    <span class="map-layer-control-label">Map Layers</span>
                                     <label class="map-layer-toggle" for="pointsLayerToggle">
                                         <input id="pointsLayerToggle" type="checkbox" checked>
                                         <span>Points</span>
+                                    </label>
+                                    <label class="map-layer-toggle" for="lisaLayerToggle">
+                                        <input id="lisaLayerToggle" type="checkbox">
+                                        <span>LISA spatial clusters</span>
                                     </label>
                                 </div>
 
@@ -285,6 +289,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="/static/js/dashboard.js?v=map-interactions-20260525e"></script>
+    <script src="/static/js/dashboard.js?v=lisa-layer-20260612a"></script>
 </body>
 </html>

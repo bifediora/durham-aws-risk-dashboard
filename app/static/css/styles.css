@@ -516,6 +516,34 @@ a {
     background: rgba(250, 204, 21, 0.9);
 }
 
+.lisa-map-legend {
+    width: min(470px, calc(100vw - 72px));
+}
+
+.lisa-legend-items {
+    gap: 8px;
+}
+
+.lisa-legend-item {
+    font-size: 0.69rem;
+}
+
+.lisa-symbol {
+    width: 12px;
+    height: 12px;
+    border: 2px solid;
+    border-radius: 3px;
+    opacity: 0.92;
+}
+
+.lisa-cluster-tooltip {
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.92);
+    color: #e2e8f0;
+    box-shadow: 0 16px 34px rgba(2, 6, 23, 0.32);
+}
+
 .legend-scale {
     display: block;
     width: 100%;

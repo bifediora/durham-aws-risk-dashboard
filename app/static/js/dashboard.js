@@ -11,15 +11,20 @@ let countyBoundaryLayer = null;
 let policeBeatsLayer = null;
 let neighborhoodsLayer = null;
 let pointOverlayLayer = null;
+let lisaClusterLayer = null;
 let selectedTractHighlightLayer = null;
 let selectedNeighborhoodHighlightLayer = null;
 let mapLegendControl = null;
 let mapLegendElement = null;
+let lisaLegendControl = null;
+let lisaLegendElement = null;
 let selectionControlElement = null;
 let currentMapMode = "points";
 let currentChoroplethMetric = "total_arrests";
 let currentTemporalView = "month";
 let pointsVisible = true;
+let lisaLayerVisible = false;
+let lisaClusterGeojson = null;
 let lastPointLayer = null;
 let selectionMode = null;
 let selectionLayer = null;
@@ -117,6 +122,34 @@ const CHOROPLETH_COLORS = [
     "#2563eb",
     "#1e3a8a"
 ];
+
+const LISA_CLUSTER_STYLES = {
+    "High-High": {
+        label: "High-High",
+        color: "#b91c1c",
+        fillColor: "#ef4444"
+    },
+    "Low-Low": {
+        label: "Low-Low",
+        color: "#1d4ed8",
+        fillColor: "#3b82f6"
+    },
+    "High-Low": {
+        label: "High-Low",
+        color: "#c2410c",
+        fillColor: "#f97316"
+    },
+    "Low-High": {
+        label: "Low-High",
+        color: "#7c3aed",
+        fillColor: "#a855f7"
+    },
+    "Not significant": {
+        label: "Not significant",
+        color: "#64748b",
+        fillColor: "#94a3b8"
+    }
+};
 
 const SELECTION_MODES = {
     rectangle: "Rectangle",
@@ -850,6 +883,9 @@ async function initializeMap() {
         zoomControl: false
     }).setView(DURHAM_CENTER, DURHAM_DEFAULT_ZOOM);
 
+    dashboardMap.createPane("lisaClusterPane");
+    dashboardMap.getPane("lisaClusterPane").style.zIndex = 425;
+
     L.control.zoom({
         position: "bottomright"
     }).addTo(dashboardMap);
@@ -930,6 +966,7 @@ async function initializeMap() {
     }
 
     initializeMapLegend();
+    initializeLisaLegend();
     initializeSelectionTools();
 
     const baseMaps = {
@@ -1037,6 +1074,26 @@ function initializeMapLegend() {
     };
 
     mapLegendControl.addTo(dashboardMap);
+}
+
+function initializeLisaLegend() {
+    if (!dashboardMap || lisaLegendControl) {
+        return;
+    }
+
+    lisaLegendControl = L.control({
+        position: "bottomleft"
+    });
+
+    lisaLegendControl.onAdd = () => {
+        lisaLegendElement = L.DomUtil.create("div", "modern-map-legend lisa-map-legend is-hidden");
+        L.DomEvent.disableClickPropagation(lisaLegendElement);
+        L.DomEvent.disableScrollPropagation(lisaLegendElement);
+        lisaLegendElement.setAttribute("aria-live", "polite");
+        return lisaLegendElement;
+    };
+
+    lisaLegendControl.addTo(dashboardMap);
 }
 
 function initializeSelectionTools() {
@@ -1463,6 +1520,172 @@ function renderChoroplethLegend(breaks, metric, values) {
     `);
 }
 
+function setLisaLegendContent(content) {
+    if (!lisaLegendElement) {
+        return;
+    }
+
+    if (!content) {
+        lisaLegendElement.classList.add("is-hidden");
+        lisaLegendElement.innerHTML = "";
+        return;
+    }
+
+    lisaLegendElement.innerHTML = content;
+    lisaLegendElement.classList.remove("is-hidden");
+}
+
+function renderLisaLegend() {
+    const legendItems = Object.values(LISA_CLUSTER_STYLES).map((clusterStyle) => {
+        return `
+            <span class="legend-item lisa-legend-item">
+                <span class="legend-symbol lisa-symbol" style="background: ${clusterStyle.fillColor}; border-color: ${clusterStyle.color};"></span>
+                ${clusterStyle.label}
+            </span>
+        `;
+    }).join("");
+
+    setLisaLegendContent(`
+        <div class="legend-title">Local spatial association</div>
+        <div class="legend-items lisa-legend-items">
+            ${legendItems}
+        </div>
+    `);
+}
+
+function getLisaClusterStyle(feature) {
+    const properties = feature.properties || {};
+    const cluster = properties.lisa_cluster || "Not significant";
+    const clusterStyle = LISA_CLUSTER_STYLES[cluster] || LISA_CLUSTER_STYLES["Not significant"];
+    const isSignificant = cluster !== "Not significant";
+
+    return {
+        pane: "lisaClusterPane",
+        color: clusterStyle.color,
+        weight: isSignificant ? 1.35 : 0.55,
+        opacity: isSignificant ? 0.92 : 0.38,
+        fillColor: clusterStyle.fillColor,
+        fillOpacity: isSignificant ? 0.54 : 0.12
+    };
+}
+
+function buildLisaPopup(properties) {
+    const geoid = properties.tract_geoid || properties.GEOID || properties.geoid || "Not available";
+    const neighborhood = properties.primary_neighborhood || "Not available";
+    const cluster = properties.lisa_cluster || "Not significant";
+    const arrestRate = Number(properties.arrests_per_1000_population || 0);
+    const localMoran = Number(properties.local_moran_i || 0);
+    const pValue = Number(properties.local_moran_p_sim || 0);
+
+    return `
+        <strong>Exploratory local spatial association result.</strong><br>
+        <strong>Tract GEOID:</strong> ${geoid}<br>
+        <strong>Neighborhood:</strong> ${neighborhood}<br>
+        <strong>LISA cluster:</strong> ${cluster}<br>
+        <strong>Arrests per 1,000 population:</strong> ${arrestRate.toFixed(1)}<br>
+        <strong>Local Moran's I:</strong> ${localMoran.toFixed(3)}<br>
+        <strong>p-value:</strong> ${pValue.toFixed(3)}
+    `;
+}
+
+function onEachLisaCluster(feature, layer) {
+    const properties = feature.properties || {};
+
+    layer.bindTooltip(buildLisaPopup(properties), {
+        sticky: true,
+        direction: "top",
+        className: "lisa-cluster-tooltip"
+    });
+
+    layer.on("mouseover", () => {
+        layer.setStyle({
+            weight: 2.2,
+            opacity: 1,
+            fillOpacity: 0.68
+        });
+    });
+
+    layer.on("mouseout", () => {
+        if (lisaClusterLayer) {
+            lisaClusterLayer.resetStyle(layer);
+        }
+    });
+}
+
+async function getLisaClusterGeojson() {
+    if (lisaClusterGeojson) {
+        return lisaClusterGeojson;
+    }
+
+    const data = await fetchJson("/api/lisa-clusters");
+    lisaClusterGeojson = data.geojson || { type: "FeatureCollection", features: [] };
+
+    return lisaClusterGeojson;
+}
+
+function removeLisaLayer() {
+    if (lisaClusterLayer && dashboardMap) {
+        dashboardMap.removeLayer(lisaClusterLayer);
+    }
+
+    lisaClusterLayer = null;
+    setLisaLegendContent("");
+}
+
+function bringPrimaryMapLayersToFront() {
+    if (
+        activeDataLayer
+        && currentMapMode !== "choropleth"
+        && typeof activeDataLayer.bringToFront === "function"
+    ) {
+        activeDataLayer.bringToFront();
+    }
+
+    if (pointOverlayLayer && typeof pointOverlayLayer.bringToFront === "function") {
+        pointOverlayLayer.bringToFront();
+    }
+
+    if (selectedTractHighlightLayer && typeof selectedTractHighlightLayer.bringToFront === "function") {
+        selectedTractHighlightLayer.bringToFront();
+    }
+
+    if (selectedNeighborhoodHighlightLayer && typeof selectedNeighborhoodHighlightLayer.bringToFront === "function") {
+        selectedNeighborhoodHighlightLayer.bringToFront();
+    }
+
+    if (cityBoundaryLayer) {
+        cityBoundaryLayer.bringToFront();
+    }
+}
+
+async function renderLisaLayer() {
+    if (!dashboardMap || !lisaLayerVisible) {
+        removeLisaLayer();
+        return;
+    }
+
+    removeLisaLayer();
+
+    try {
+        const geojson = await getLisaClusterGeojson();
+
+        lisaClusterLayer = L.geoJSON(geojson, {
+            pane: "lisaClusterPane",
+            style: getLisaClusterStyle,
+            onEachFeature: onEachLisaCluster
+        });
+
+        lisaClusterLayer.addTo(dashboardMap);
+        renderLisaLegend();
+        bringPrimaryMapLayersToFront();
+    } catch (error) {
+        console.warn("Unable to load LISA clusters layer.", error);
+        lisaLayerVisible = false;
+        updateLisaLayerToggle();
+        removeLisaLayer();
+    }
+}
+
 function buildMapModeLabel(mode) {
     if (mode === "cluster") {
         return "cluster mode";
@@ -1498,10 +1721,9 @@ async function updateMap() {
 
     await renderSelectedTractHighlightLayer();
     await renderSelectedNeighborhoodHighlightLayer();
+    await renderLisaLayer();
 
-    if (cityBoundaryLayer) {
-        cityBoundaryLayer.bringToFront();
-    }
+    bringPrimaryMapLayersToFront();
 
     updateSelectionControlVisibility();
 }
@@ -2169,11 +2391,29 @@ function updateTogglePointsButton() {
     toggle.closest(".map-layer-toggle")?.classList.toggle("active", pointsVisible);
 }
 
+function updateLisaLayerToggle() {
+    const toggle = getElement("lisaLayerToggle");
+
+    if (!toggle) {
+        return;
+    }
+
+    toggle.checked = lisaLayerVisible;
+    toggle.closest(".map-layer-toggle")?.classList.toggle("active", lisaLayerVisible);
+}
+
 async function togglePointsVisibility() {
     pointsVisible = !pointsVisible;
     updateTogglePointsButton();
 
     await updateMap();
+}
+
+async function toggleLisaLayerVisibility() {
+    lisaLayerVisible = !lisaLayerVisible;
+    updateLisaLayerToggle();
+
+    await renderLisaLayer();
 }
 
 async function renderDistrictChart() {
@@ -2456,6 +2696,10 @@ function setupEvents() {
 
     getElement("pointsLayerToggle")?.addEventListener("change", async () => {
         await togglePointsVisibility();
+    });
+
+    getElement("lisaLayerToggle")?.addEventListener("change", async () => {
+        await toggleLisaLayerVisibility();
     });
 
     getElement("choroplethMetricSelect")?.addEventListener("change", async (event) => {
