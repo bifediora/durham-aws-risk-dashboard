@@ -142,6 +142,7 @@ ML documentation:
 - [ML Phase 1 Plan](docs/ml_phase_1_plan.md)
 - [Model Card](docs/ml_model_card.md)
 - [Model Comparison](docs/ml_model_comparison.md)
+- [PCA Model Notes](docs/ml_pca_model_notes.md)
 
 ML artifacts:
 
@@ -150,6 +151,12 @@ ML artifacts:
 - `ml/scripts/train_random_forest.py`
 - `ml/scripts/evaluate_models_cross_validation.py`
 - `ml/notebooks/01_logistic_regression_exploration.ipynb`
+
+PCA-compressed logistic regression:
+
+- `ml/scripts/train_pca_logistic_regression.py`
+- `ml/outputs/pca_logistic_regression_cv_summary.json`
+- `ml/outputs/pca_component_loadings.csv`
 
 ## Data Sources
 
