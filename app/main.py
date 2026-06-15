@@ -8,6 +8,7 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.templating import Jinja2Templates
 from pyproj import Transformer
 from shapely.geometry import Point, Polygon, shape
@@ -18,6 +19,8 @@ app = FastAPI(
     description="A cloud hosted monitoring dashboard for public safety risk intelligence.",
     version="0.3.6",
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
