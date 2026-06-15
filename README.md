@@ -49,6 +49,15 @@ Current public endpoints:
 
 ```text
 Dashboard: http://54.242.183.123
+
+## Recent Enhancements
+
+- Added a non-operational Local Moran's I / LISA spatial cluster layer for exploratory tract-level spatial autocorrelation analysis.
+- Added LISA tooltip context including neighborhood, cluster category, arrest rate, Local Moran's I, and p-value.
+- Added a responsible-use info tooltip explaining that the LISA layer is exploratory and does not predict individual behavior or identify dangerous places.
+- Updated tract popups so the currently selected choropleth metric is always displayed.
+- Enabled gzip compression for large GeoJSON API responses, reducing public choropleth payload size and improving response time.
+- Prevented choropleth metric changes from refitting the map, improving dashboard responsiveness and reducing visual jumpiness.
 Health:    http://54.242.183.123/health
 ```
 
