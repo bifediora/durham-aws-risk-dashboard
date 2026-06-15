@@ -2031,9 +2031,7 @@ function buildChoroplethPopup(properties) {
     const selectedMetric = properties.selected_metric || currentChoroplethMetric;
     const selectedMetricLabel = CHOROPLETH_METRIC_LABELS[selectedMetric] || "Selected metric";
     const selectedMetricValue = Number(properties.selected_metric_value || 0);
-    const selectedMetricLine = CENSUS_CONTEXT_METRICS.has(selectedMetric)
-        ? `<strong>${selectedMetricLabel}:</strong> ${formatChoroplethPopupValue(selectedMetricValue, selectedMetric)}<br>`
-        : "";
+    const selectedMetricLine = `<strong>${selectedMetricLabel}:</strong> ${formatChoroplethPopupValue(selectedMetricValue, selectedMetric)}<br>`;
 
     return `
         <strong>${properties.name || "Census tract"}</strong><br>
