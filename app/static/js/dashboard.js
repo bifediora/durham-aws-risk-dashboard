@@ -1698,7 +1698,7 @@ function buildMapModeLabel(mode) {
     return "point mode";
 }
 
-async function updateMap() {
+async function updateMap(options = {}) {
     if (!dashboardMap) {
         return;
     }
@@ -1716,7 +1716,7 @@ async function updateMap() {
     } else if (currentMapMode === "cluster") {
         await renderClusterLayer();
     } else if (currentMapMode === "choropleth") {
-        await renderChoroplethLayer();
+        await renderChoroplethLayer(options);
     }
 
     await renderSelectedTractHighlightLayer();
@@ -2163,7 +2163,7 @@ async function renderSelectedNeighborhoodHighlightLayer() {
     selectedNeighborhoodHighlightLayer.bringToFront();
 }
 
-async function renderChoroplethLayer() {
+async function renderChoroplethLayer(options = {}) {
     const query = buildFilterQuery();
     const separator = query ? `${query}&` : "?";
     const data = await fetchJson(`/api/choropleth${separator}metric=${currentChoroplethMetric}`);
@@ -2291,7 +2291,9 @@ async function renderChoroplethLayer() {
     );
     renderChoroplethLegend(breaks, currentChoroplethMetric, values);
 
-    fitLayerIfPossible(choroplethLayer);
+    if (options.fitBounds !== false) {
+        fitLayerIfPossible(choroplethLayer);
+    }
 
     if (pointsVisible) {
         await renderChoroplethPointOverlay();
@@ -2704,7 +2706,7 @@ function setupEvents() {
         currentChoroplethMetric = event.target.value || "total_arrests";
 
         if (currentMapMode === "choropleth") {
-            await updateMap();
+            await updateMap({ fitBounds: false });
         }
     });
 
