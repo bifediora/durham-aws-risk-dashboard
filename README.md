@@ -49,6 +49,8 @@ Current public endpoints:
 
 ```text
 Dashboard: http://54.242.183.123
+Health:    http://54.242.183.123/health
+```
 
 ## Recent Enhancements
 
@@ -58,8 +60,6 @@ Dashboard: http://54.242.183.123
 - Updated tract popups so the currently selected choropleth metric is always displayed.
 - Enabled gzip compression for large GeoJSON API responses, reducing public choropleth payload size and improving response time.
 - Prevented choropleth metric changes from refitting the map, improving dashboard responsiveness and reducing visual jumpiness.
-Health:    http://54.242.183.123/health
-```
 
 Confirmed runtime details:
 
