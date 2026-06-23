@@ -384,6 +384,7 @@ Supporting documentation is stored in the `docs/` folder.
 | `docs/current_architecture_diagram.md` | Final current AWS architecture diagram and deployment flow |
 | `docs/dashboard_mvp_summary.md` | Dashboard MVP technical summary and Phase 6 operations update |
 | `docs/process_log.md` | Chronological project build and milestone log |
+| `docs/durham_risk_intelligence_case_study.md` | Plain language overview of the project, its methods, and cloud deployment |
 | `infra/terraform/README.md` | Terraform workspace documentation |
 | `docs/aws_architecture_notes.md` | Earlier AWS architecture notes and exploratory work |
 | `docs/alb_target_group_notes.md` | Earlier ALB and Target Group exploration notes |
